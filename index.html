@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Office Rotation</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #dbeafe;
+      --wabash: #7c3aed;
+      --wabash-light: #ede9fe;
+      --wabash-border: #c4b5fd;
+      --monroe: #0891b2;
+      --monroe-light: #cffafe;
+      --monroe-border: #a5f3fc;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+      --current-bg: #fef3c7;
+      --current-border: #f59e0b;
+      --current-text: #92400e;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    .api-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .api-badge.loading { background: #fef9c3; color: #854d0e; }
+    .api-badge.error   { background: #fee2e2; color: #dc2626; }
+    .api-badge.offline { background: #f1f5f9; color: var(--muted); }
+
+    select {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      max-width: 160px;
+    }
+
+    /* ── Layout ── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Banners ── */
+    .banner {
+      border-radius: var(--radius);
+      padding: 11px 16px;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .banner.warning { background: var(--current-bg); border: 1px solid var(--current-border); color: var(--current-text); }
+    .banner.info    { background: var(--primary-light); border: 1px solid #93c5fd; color: #1e40af; }
+    .banner.hidden  { display: none; }
+
+    /* ── Week nav ── */
+    .week-nav {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow);
+    }
+
+    .week-controls { display: flex; align-items: center; gap: 8px; }
+
+    #weekLabel {
+      font-weight: 600;
+      font-size: 0.95rem;
+      min-width: 190px;
+      text-align: center;
+    }
+
+    .current-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: var(--primary);
+      color: white;
+      padding: 2px 7px;
+      border-radius: 10px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .loc-filters { display: flex; gap: 4px; margin-left: auto; }
+
+    button { cursor: pointer; border: none; border-radius: var(--radius); font-size: 0.8rem; font-weight: 500; transition: background 0.12s, color 0.12s; }
+
+    .btn-nav {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 11px;
+      line-height: 1;
+    }
+    .btn-nav:hover:not(:disabled) { background: var(--border); }
+    .btn-nav:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-filter {
+      padding: 6px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-filter:hover { background: var(--border); }
+    .btn-filter.active        { background: var(--primary); border-color: var(--primary); color: white; }
+    .btn-filter.active.wabash { background: var(--wabash); border-color: var(--wabash); }
+    .btn-filter.active.monroe { background: var(--monroe); border-color: var(--monroe); }
+
+    /* ── Roster ── */
+    .roster { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .roster { grid-template-columns: 1fr; } }
+
+    .loc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .loc-card.hidden { display: none; }
+
+    .loc-card-header {
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .loc-card-header.wabash { background: var(--wabash-light); border-bottom-color: var(--wabash-border); }
+    .loc-card-header.monroe { background: var(--monroe-light); border-bottom-color: var(--monroe-border); }
+
+    .loc-title { font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+    .loc-title.wabash { color: var(--wabash); }
+    .loc-title.monroe { color: var(--monroe); }
+
+    .count-pill {
+      background: rgba(0,0,0,0.1);
+      color: inherit;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+
+    .name-list { list-style: none; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .chip {
+      padding: 4px 11px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .chip.you {
+      background: var(--current-bg);
+      border-color: var(--current-border);
+      color: var(--current-text);
+      font-weight: 700;
+    }
+
+    /* ── Personal schedule ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .card-title { font-size: 0.95rem; font-weight: 700; }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .sched-item {
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 12px;
+    }
+    .sched-item.wabash-w { border-left-color: var(--wabash); }
+    .sched-item.monroe-w { border-left-color: var(--monroe); }
+    .sched-item.now { background: var(--current-bg); border-color: var(--current-border); border-left-color: var(--current-border); }
+
+    .sched-week  { font-size: 0.7rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+    .sched-loc   { font-size: 0.88rem; font-weight: 700; }
+    .sched-loc.wabash { color: var(--wabash); }
+    .sched-loc.monroe { color: var(--monroe); }
+    .sched-now-tag { font-size: 0.65rem; color: var(--current-text); margin-top: 3px; font-weight: 600; }
+
+    .empty-msg { color: var(--muted); font-size: 0.85rem; padding: 20px 0; text-align: center; }
+
+    /* ── Trade board ── */
+    .btn-primary { background: var(--primary); color: white; padding: 7px 14px; }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    .btn-sm { padding: 5px 11px; font-size: 0.75rem; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: #15803d; }
+    .btn-danger  { background: var(--danger); color: white; }
+    .btn-danger:hover  { background: #b91c1c; }
+    .btn-ghost   { background: var(--bg); border: 1px solid var(--border); color: var(--muted); }
+    .btn-ghost:hover   { background: var(--border); }
+
+    .trade-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .trade-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 13px 15px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .trade-card.for-me { border-color: var(--primary); background: var(--primary-light); }
+
+    .trade-type-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+    .trade-type-tag.open { color: var(--success); }
+    .trade-type-tag.swap { color: var(--primary); }
+
+    .trade-desc  { font-size: 0.85rem; font-weight: 500; line-height: 1.4; }
+    .trade-meta  { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+    .trade-actions { display: flex; gap: 7px; align-items: center; flex-shrink: 0; padding-top: 2px; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.hidden { display: none; }
+
+    .modal {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+    .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 18px; }
+
+    .form-group { margin-bottom: 14px; }
+    label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .form-group select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.85rem; }
+
+    .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .type-opt {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .type-opt:hover { border-color: #93c5fd; }
+    .type-opt.selected { border-color: var(--primary); background: var(--primary-light); }
+    .type-opt-title { font-size: 0.82rem; font-weight: 700; margin-bottom: 3px; }
+    .type-opt-desc  { font-size: 0.72rem; color: var(--muted); }
+
+    .trade-preview {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      min-height: 40px;
+    }
+
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Office Rotation</h1>
+  <div class="header-right">
+    <span id="apiBadge" class="api-badge loading">Loading…</span>
+    <select id="nameSelect">
+      <option value="">Select your name</option>
+    </select>
+  </div>
+</header>
+
+<main>
+  <!-- Config banner -->
+  <div id="configBanner" class="banner warning hidden">
+    <span><strong>Setup required:</strong> Open this file and fill in your <code>API_KEY</code>, <code>CLIENT_ID</code>, and <code>SHEET_ID</code> in the CONFIG block.</span>
+  </div>
+
+  <!-- Sign-in banner -->
+  <div id="signInBanner" class="banner info hidden">
+    <span>Sign in with Google to post or approve trades (and sync them to the sheet).</span>
+    <button class="btn-primary btn-sm" onclick="signIn()">Sign in</button>
+  </div>
+
+  <!-- Week nav -->
+  <div class="week-nav">
+    <div class="week-controls">
+      <button class="btn-nav" id="prevBtn" onclick="changeWeek(-1)">&#9664;</button>
+      <span id="weekLabel">—</span>
+      <button class="btn-nav" id="nextBtn" onclick="changeWeek(1)">&#9654;</button>
+    </div>
+    <div class="loc-filters">
+      <button class="btn-filter active" onclick="setFilter('both',this)">Both</button>
+      <button class="btn-filter" onclick="setFilter('wabash',this)">Wabash</button>
+      <button class="btn-filter" onclick="setFilter('monroe',this)">Monroe</button>
+    </div>
+  </div>
+
+  <!-- Roster -->
+  <div class="roster">
+    <div class="loc-card" id="wabashCard">
+      <div class="loc-card-header wabash">
+        <div class="loc-title wabash">Wabash <span class="count-pill" id="wabashCount">0</span></div>
+      </div>
+      <ul class="name-list" id="wabashList"></ul>
+    </div>
+    <div class="loc-card" id="monroeCard">
+      <div class="loc-card-header monroe">
+        <div class="loc-title monroe">Monroe <span class="count-pill" id="monroeCount">0</span></div>
+      </div>
+      <ul class="name-list" id="monroeList"></ul>
+    </div>
+  </div>
+
+  <!-- Personal schedule -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Your Schedule</h2>
+    </div>
+    <div id="personalSchedule"></div>
+  </div>
+
+  <!-- Trade board -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Trade Board</h2>
+      <button class="btn-primary" onclick="openModal()">+ Post Trade</button>
+    </div>
+    <div class="trade-list" id="tradeList"></div>
+  </div>
+</main>
+
+<!-- Trade modal -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <h2>Post a Trade</h2>
+
+    <div class="form-group">
+      <label>Type</label>
+      <div class="type-toggle">
+        <div class="type-opt selected" id="typeOpen" onclick="setTradeType('open')">
+          <div class="type-opt-title">Open Post</div>
+          <div class="type-opt-desc">Anyone can claim</div>
+        </div>
+        <div class="type-opt" id="typeSwap" onclick="setTradeType('swap')">
+          <div class="type-opt-title">Direct Swap</div>
+          <div class="type-opt-desc">Specific person</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Week</label>
+      <select id="modalWeek" onchange="updatePreview()"></select>
+    </div>
+
+    <div class="form-group" id="targetGroup" style="display:none">
+      <label>Swap with</label>
+      <select id="modalTarget" onchange="updatePreview()">
+        <option value="">Select person…</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Preview</label>
+      <div class="trade-preview" id="tradePreview">Select a week to preview.</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitTrade()">Post Trade</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG — replace these before sharing with your team
+// ═══════════════════════════════════════════════════════
+const CONFIG = {
+  API_KEY:   'AIzaSyAZNVz0WM4HwfgXsz-_cNbAi1bTE6lBhXY',
+  CLIENT_ID: '611063623994-sohli3bokfj6ng8ldg7m546950v40g4a.apps.googleusercontent.com',
+  SHEET_ID:  '1i6szQi_L9CCDQqjVxwG1EaZ3bL2QLJUihKbMGi3NVA4',
+  SCHEDULE_TAB: 'Schedule',
+  TRADES_TAB:   'Trades',
+};
+
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+
+// ═══════════════════════════════════════════════════════
+// EMBEDDED SCHEDULE — used as fallback if Sheets is unavailable
+// ═══════════════════════════════════════════════════════
+const BASE_SCHEDULE = [
+  { weekStart:'2026-03-30', label:'Mar 30 – Apr 3',
+    wabash:['Dom','Juan','KC','Jack','Gerard','Sierra','Rachel','Will','Kate G','Beck','Chase','Steven'],
+    monroe:['Jared','Nate','Michael','Shiv','Paolo','Joe','Luke','Kate S','Alycia','Ben'] },
+  { weekStart:'2026-04-06', label:'Apr 6 – Apr 10',
+    wabash:['Jared','KC','Nate','Joe','Luke','Michael','Shiv','Kate S','Alycia','Ben','Paolo','Will'],
+    monroe:['Dom','Jack','Gerard','Rachel','Beck','Juan','Sierra','Kate G','Chase','Steven'] },
+  { weekStart:'2026-04-13', label:'Apr 13 – Apr 17',
+    wabash:['Dom','Jared','Juan','Nate','Joe','Gerard','Sierra','Kate S','Kate G','Alycia','Chase','Paolo'],
+    monroe:['KC','Luke','Michael','Will','Ben','Jack','Rachel','Shiv','Beck','Steven'] },
+  { weekStart:'2026-04-20', label:'Apr 20 – Apr 24',
+    wabash:['Juan','Jack','Luke','Michael','Rachel','Shiv','Will','Kate G','Beck','Ben','Chase','Steven'],
+    monroe:['Dom','Nate','Joe','Sierra','Alycia','Jared','KC','Gerard','Kate S','Paolo'] },
+  { weekStart:'2026-04-27', label:'Apr 27 – May 1',
+    wabash:['Dom','KC','Jack','Joe','Gerard','Rachel','Shiv','Kate S','Alycia','Ben','Paolo','Steven'],
+    monroe:['Juan','Luke','Sierra','Will','Chase','Jared','Nate','Michael','Kate G','Beck'] },
+  { weekStart:'2026-05-04', label:'May 4 – May 8',
+    wabash:['Jared','Juan','Nate','Luke','Sierra','Will','Kate S','Kate G','Beck','Ben','Chase','Paolo'],
+    monroe:['Dom','Joe','Michael','Shiv','Steven','KC','Jack','Gerard','Rachel','Alycia'] },
+  { weekStart:'2026-05-11', label:'May 11 – May 15',
+    wabash:['Dom','Jared','KC','Nate','Michael','Rachel','Will','Alycia','Beck','Ben','Paolo','Steven'],
+    monroe:['Juan','Jack','Luke','Shiv','Chase','Joe','Gerard','Sierra','Kate S','Kate G'] },
+  { weekStart:'2026-05-18', label:'May 18 – May 22',
+    wabash:['Juan','KC','Joe','Luke','Gerard','Sierra','Shiv','Kate S','Kate G','Alycia','Chase','Steven'],
+    monroe:['Nate','Jack','Rachel','Will','Paolo','Dom','Jared','Michael','Beck','Ben'] },
+  { weekStart:'2026-05-25', label:'May 25 – May 29',
+    wabash:['Dom','Jared','Jack','Joe','Luke','Gerard','Michael','Rachel','Will','Kate G','Beck','Ben'],
+    monroe:['KC','Sierra','Shiv','Alycia','Steven','Juan','Nate','Kate S','Chase','Paolo'] },
+];
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let schedule    = BASE_SCHEDULE.map(w => ({ ...w, wabash:[...w.wabash], monroe:[...w.monroe] }));
+let trades      = [];
+let weekIdx     = 0;
+let locFilter   = 'both';
+let currentUser = localStorage.getItem('orb_user') || '';
+let tradeType   = 'open';
+let isSignedIn  = false;
+let gapiReady   = false;
+let tokenClient = null;
+
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+function boot() {
+  const configured = CONFIG.API_KEY !== 'YOUR_API_KEY_HERE';
+
+  if (!configured) {
+    document.getElementById('configBanner').classList.remove('hidden');
+    setBadge('Not configured', 'offline');
+  }
+
+  loadLocalTrades();
+  weekIdx = findCurrentWeekIndex();
+  buildNameSelect();
+  renderAll();
+
+  if (configured) {
+    setBadge('Connecting…', 'loading');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// WEEK HELPERS
+// ═══════════════════════════════════════════════════════
+function findCurrentWeekIndex() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (let i = 0; i < schedule.length; i++) {
+    const start = new Date(schedule[i].weekStart);
+    const end   = new Date(start); end.setDate(end.getDate() + 4);
+    if (today >= start && today <= end) return i;
+  }
+  const first = new Date(schedule[0].weekStart);
+  return today < first ? 0 : schedule.length - 1;
+}
+
+function isCurrentWeek(i) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(schedule[i].weekStart);
+  const end   = new Date(start); end.setDate(end.getDate() + 4);
+  return today >= start && today <= end;
+}
+
+function changeWeek(dir) {
+  weekIdx = Math.max(0, Math.min(schedule.length - 1, weekIdx + dir));
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+function renderAll() {
+  renderWeekNav();
+  renderRoster();
+  renderPersonal();
+  renderTrades();
+}
+
+function renderWeekNav() {
+  const w   = schedule[weekIdx];
+  const cur = isCurrentWeek(weekIdx);
+  const lbl = document.getElementById('weekLabel');
+  lbl.innerHTML = w.label + (cur ? '<span class="current-tag">This Week</span>' : '');
+  document.getElementById('prevBtn').disabled = weekIdx === 0;
+  document.getElementById('nextBtn').disabled = weekIdx === schedule.length - 1;
+}
+
+function renderRoster() {
+  const w = schedule[weekIdx];
+  document.getElementById('wabashCard').classList.toggle('hidden', locFilter === 'monroe');
+  document.getElementById('monroeCard').classList.toggle('hidden', locFilter === 'wabash');
+  fillList('wabashList', w.wabash);
+  fillList('monroeList', w.monroe);
+  document.getElementById('wabashCount').textContent = w.wabash.length;
+  document.getElementById('monroeCount').textContent = w.monroe.length;
+}
+
+function fillList(id, names) {
+  const ul = document.getElementById(id);
+  ul.innerHTML = '';
+  names.forEach(name => {
+    const li   = document.createElement('li');
+    const chip = document.createElement('span');
+    chip.className = 'chip' + (name === currentUser ? ' you' : '');
+    chip.textContent = name + (name === currentUser ? ' (you)' : '');
+    li.appendChild(chip);
+    ul.appendChild(li);
+  });
+}
+
+function renderPersonal() {
+  const el = document.getElementById('personalSchedule');
+  if (!currentUser) {
+    el.innerHTML = '<p class="empty-msg">Select your name above to see your full schedule.</p>';
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'schedule-grid';
+  schedule.forEach((w, i) => {
+    const loc = w.wabash.includes(currentUser) ? 'wabash' : w.monroe.includes(currentUser) ? 'monroe' : null;
+    if (!loc) return;
+    const cur  = isCurrentWeek(i);
+    const item = document.createElement('div');
+    item.className = `sched-item ${loc}-w${cur ? ' now' : ''}`;
+    item.innerHTML = `
+      <div class="sched-week">${w.label}</div>
+      <div class="sched-loc ${loc}">${loc.charAt(0).toUpperCase()+loc.slice(1)}</div>
+      ${cur ? '<div class="sched-now-tag">Current week</div>' : ''}`;
+    grid.appendChild(item);
+  });
+  el.innerHTML = '';
+  el.appendChild(grid);
+}
+
+function renderTrades() {
+  const el     = document.getElementById('tradeList');
+  const active = trades.filter(t => t.status === 'pending');
+  if (!active.length) {
+    el.innerHTML = '<p class="empty-msg">No active trades. Be the first to post one!</p>';
+    return;
+  }
+  el.innerHTML = '';
+  active.forEach(t => el.appendChild(buildTradeCard(t)));
+}
+
+function buildTradeCard(t) {
+  const isForMe  = t.type === 'swap' && t.targetPerson === currentUser;
+  const isMyPost = t.postedBy === currentUser;
+  const wk       = schedule.find(w => w.weekStart === t.weekDate);
+  const wkLabel  = wk ? wk.label : t.weekDate;
+
+  let desc;
+  if (t.type === 'open') {
+    desc = `<strong>${t.postedBy}</strong> at <strong>${t.location}</strong> · ${wkLabel} — open to any swap`;
+  } else {
+    desc = `<strong>${t.postedBy}</strong> wants to swap <strong>${t.location}</strong> · ${wkLabel} with <strong>${t.targetPerson}</strong>`;
+  }
+
+  let actions = '';
+  if (isMyPost) {
+    actions = `<button class="btn-ghost btn-sm" onclick="cancelTrade('${t.id}')">Cancel</button>`;
+  } else if (t.type === 'open' && currentUser) {
+    const myLoc = wk ? userLocInWeek(currentUser, wk) : null;
+    if (myLoc && myLoc !== t.location) {
+      actions = `<button class="btn-success btn-sm" onclick="acceptTrade('${t.id}')">Accept — swap my ${myLoc}</button>`;
+    }
+  } else if (isForMe) {
+    actions = `
+      <button class="btn-success btn-sm" onclick="acceptTrade('${t.id}')">Approve</button>
+      <button class="btn-danger  btn-sm" onclick="declineTrade('${t.id}')">Decline</button>`;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'trade-card' + (isForMe ? ' for-me' : '');
+  card.innerHTML = `
+    <div style="flex:1">
+      <div class="trade-type-tag ${t.type}">${t.type === 'open' ? 'Open Post' : 'Direct Swap'}</div>
+      <div class="trade-desc">${desc}</div>
+      <div class="trade-meta">Posted ${new Date(t.postedAt).toLocaleDateString()}</div>
+    </div>
+    <div class="trade-actions">${actions}</div>`;
+  return card;
+}
+
+// ═══════════════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════════════
+function setFilter(loc, btn) {
+  locFilter = loc;
+  document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active','wabash','monroe'));
+  btn.classList.add('active');
+  if (loc !== 'both') btn.classList.add(loc);
+  renderRoster();
+}
+
+function buildNameSelect() {
+  const names = new Set();
+  schedule.forEach(w => { w.wabash.forEach(n => names.add(n)); w.monroe.forEach(n => names.add(n)); });
+  const sel = document.getElementById('nameSelect');
+  // Preserve existing options count to avoid duplication on reload
+  while (sel.options.length > 1) sel.remove(1);
+  Array.from(names).sort().forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    if (n === currentUser) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.onchange = e => {
+    currentUser = e.target.value;
+    localStorage.setItem('orb_user', currentUser);
+    renderAll();
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+// TRADE MODAL
+// ═══════════════════════════════════════════════════════
+function openModal() {
+  if (!currentUser) { alert('Select your name first.'); return; }
+
+  // Populate week dropdown
+  const ws = document.getElementById('modalWeek');
+  ws.innerHTML = '';
+  schedule.forEach(w => {
+    const loc = userLocInWeek(currentUser, w);
+    if (!loc) return;
+    const o = document.createElement('option');
+    o.value = w.weekStart;
+    o.textContent = `${w.label}  (${capitalize(loc)})`;
+    ws.appendChild(o);
+  });
+
+  // Populate target dropdown
+  const ts = document.getElementById('modalTarget');
+  ts.innerHTML = '<option value="">Select person…</option>';
+  const names = new Set();
+  schedule.forEach(w => { w.wabash.forEach(n => names.add(n)); w.monroe.forEach(n => names.add(n)); });
+  Array.from(names).sort().filter(n => n !== currentUser).forEach(n => {
+    const o = document.createElement('option'); o.value = n; o.textContent = n; ts.appendChild(o);
+  });
+
+  setTradeType('open');
+  updatePreview();
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
+
+function setTradeType(type) {
+  tradeType = type;
+  document.getElementById('typeOpen').classList.toggle('selected', type === 'open');
+  document.getElementById('typeSwap').classList.toggle('selected', type === 'swap');
+  document.getElementById('targetGroup').style.display = type === 'swap' ? 'block' : 'none';
+  updatePreview();
+}
+
+function updatePreview() {
+  const prev     = document.getElementById('tradePreview');
+  const weekDate = document.getElementById('modalWeek').value;
+  const w        = schedule.find(x => x.weekStart === weekDate);
+  if (!w) { prev.textContent = 'Select a week to preview.'; return; }
+
+  const myLoc = userLocInWeek(currentUser, w);
+  if (!myLoc) { prev.textContent = "You don't appear in that week's schedule."; return; }
+
+  if (tradeType === 'open') {
+    prev.textContent = `"${currentUser} at ${capitalize(myLoc)} · ${w.label} — open to any swap"`;
+    return;
+  }
+
+  const target    = document.getElementById('modalTarget').value;
+  if (!target)    { prev.textContent = 'Select a person to swap with.'; return; }
+  const theirLoc  = userLocInWeek(target, w);
+  if (!theirLoc)  { prev.textContent = `${target} isn't in the schedule for that week.`; return; }
+  if (theirLoc === myLoc) { prev.textContent = `You and ${target} are both at ${capitalize(myLoc)} that week — no swap needed!`; return; }
+
+  prev.textContent = `Swap your ${capitalize(myLoc)} ↔ ${target}'s ${capitalize(theirLoc)} for ${w.label}`;
+}
+
+async function submitTrade() {
+  const weekDate = document.getElementById('modalWeek').value;
+  const target   = tradeType === 'swap' ? document.getElementById('modalTarget').value : '';
+  if (!weekDate)                          { alert('Select a week.');         return; }
+  if (tradeType === 'swap' && !target)    { alert('Select a person.');       return; }
+
+  const w   = schedule.find(x => x.weekStart === weekDate);
+  const loc = userLocInWeek(currentUser, w);
+  if (!loc) return;
+
+  if (tradeType === 'swap') {
+    const theirLoc = userLocInWeek(target, w);
+    if (theirLoc === loc) { alert(`You and ${target} are both at ${capitalize(loc)} that week.`); return; }
+  }
+
+  const trade = {
+    id:           crypto.randomUUID(),
+    postedBy:     currentUser,
+    weekDate,
+    location:     capitalize(loc),
+    type:         tradeType,
+    targetPerson: target,
+    status:       'pending',
+    postedAt:     new Date().toISOString(),
+    acceptedBy:   '',
+    acceptedAt:   '',
+  };
+
+  trades.push(trade);
+  closeModal();
+
+  if (isSignedIn) {
+    await sheetsAppendTrade(trade);
+  } else {
+    saveLocalTrades();
+    document.getElementById('signInBanner').classList.remove('hidden');
+  }
+  renderTrades();
+}
+
+async function acceptTrade(id) {
+  if (!currentUser) { alert('Select your name first.'); return; }
+  const t  = trades.find(x => x.id === id);
+  const w  = schedule.find(x => x.weekStart === t.weekDate);
+  if (!t || !w) return;
+
+  const posterLoc   = userLocInWeek(t.postedBy, w);
+  const accepterLoc = userLocInWeek(currentUser, w);
+  if (!posterLoc || !accepterLoc || posterLoc === accepterLoc) {
+    alert('Swap not possible — you are at the same location.'); return;
+  }
+
+  // Swap in local schedule
+  swapInWeek(w, t.postedBy, currentUser);
+
+  t.status     = 'accepted';
+  t.acceptedBy = currentUser;
+  t.acceptedAt = new Date().toISOString();
+
+  if (isSignedIn) {
+    await sheetsSwapSchedule(t, w, t.postedBy, currentUser);
+    await sheetsUpdateTradeStatus(t);
+  } else {
+    saveLocalTrades();
+    document.getElementById('signInBanner').classList.remove('hidden');
+  }
+  renderAll();
+}
+
+async function declineTrade(id) {
+  const t = trades.find(x => x.id === id);
+  if (!t) return;
+  t.status = 'cancelled';
+  if (isSignedIn) { await sheetsUpdateTradeStatus(t); } else { saveLocalTrades(); }
+  renderTrades();
+}
+
+async function cancelTrade(id) {
+  const t = trades.find(x => x.id === id);
+  if (!t) return;
+  t.status = 'cancelled';
+  if (isSignedIn) { await sheetsUpdateTradeStatus(t); } else { saveLocalTrades(); }
+  renderTrades();
+}
+
+// ═══════════════════════════════════════════════════════
+// LOCAL STORAGE
+// ═══════════════════════════════════════════════════════
+function saveLocalTrades() {
+  localStorage.setItem('orb_trades', JSON.stringify(trades));
+}
+function loadLocalTrades() {
+  try { trades = JSON.parse(localStorage.getItem('orb_trades') || '[]'); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+// GOOGLE API — GAPI + GIS
+// ═══════════════════════════════════════════════════════
+function gapiLoaded() {
+  gapi.load('client', async () => {
+    if (CONFIG.API_KEY === 'YOUR_API_KEY_HERE') return;
+    try {
+      await gapi.client.init({
+        apiKey: CONFIG.API_KEY,
+        discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+      });
+      gapiReady = true;
+      await sheetsLoadSchedule();
+      await sheetsLoadTrades();
+    } catch(e) {
+      console.error('GAPI init error', e);
+      setBadge('API Error', 'error');
+    }
+  });
+}
+
+function gisLoaded() {
+  if (CONFIG.CLIENT_ID === 'YOUR_CLIENT_ID_HERE') return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.CLIENT_ID,
+    scope: SCOPES,
+    callback: async resp => {
+      if (resp.error) return;
+      isSignedIn = true;
+      document.getElementById('signInBanner').classList.add('hidden');
+      await syncLocalTrades();
+    },
+  });
+}
+
+function signIn() {
+  if (!tokenClient) { alert('Google API not configured.'); return; }
+  tokenClient.requestAccessToken({ prompt: '' });
+}
+
+// ═══════════════════════════════════════════════════════
+// SHEETS — READ SCHEDULE
+// ═══════════════════════════════════════════════════════
+async function sheetsLoadSchedule() {
+  try {
+    const res  = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: CONFIG.SHEET_ID,
+      range: `${CONFIG.SCHEDULE_TAB}!A:Z`,
+    });
+    const rows = res.result.values || [];
+    const parsed = parseScheduleRows(rows);
+    if (parsed.length) {
+      schedule = parsed;
+      weekIdx  = findCurrentWeekIndex();
+      buildNameSelect();
+      renderAll();
+      setBadge('Live', 'live');
+    }
+  } catch(e) {
+    console.error('Schedule load failed', e);
+    setBadge('Offline', 'offline');
+  }
+}
+
+function parseScheduleRows(rows) {
+  const result = [];
+  let cur = null;
+  const startRow = (rows[0] && /date/i.test(rows[0][0] || '')) ? 1 : 0;
+
+  for (let i = startRow; i < rows.length; i++) {
+    const row  = rows[i] || [];
+    const col0 = (row[0] || '').trim();
+    const col1 = (row[1] || '').trim();
+    const names = row.slice(2).map(n => (n||'').trim()).filter(Boolean);
+
+    if (col0) {
+      cur = { weekStart: parseDateRangeStart(col0), label: formatDateLabel(col0), wabash:[], monroe:[] };
+      result.push(cur);
+    }
+    if (!cur) continue;
+    if (/wabash/i.test(col1))        cur.wabash = names;
+    else if (/monroe/i.test(col1))   cur.monroe = names;
+  }
+  return result.filter(w => w.weekStart);
+}
+
+function parseDateRangeStart(str) {
+  try {
+    const first = str.split('-')[0].trim();
+    const [m, d] = first.split('/').map(Number);
+    return `2026-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  } catch(e) { return null; }
+}
+
+function formatDateLabel(str) {
+  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  try {
+    const parts = str.split('-');
+    const [sm, sd] = parts[0].trim().split('/').map(Number);
+    const end = parts.slice(1).join('-').trim();
+    let em, ed;
+    if (end.includes('/')) { [em, ed] = end.split('/').map(Number); }
+    else                   { em = sm; ed = Number(end); }
+    return sm === em
+      ? `${mon[sm-1]} ${sd} – ${ed}`
+      : `${mon[sm-1]} ${sd} – ${mon[em-1]} ${ed}`;
+  } catch(e) { return str; }
+}
+
+// ═══════════════════════════════════════════════════════
+// SHEETS — READ TRADES
+// ═══════════════════════════════════════════════════════
+async function sheetsLoadTrades() {
+  try {
+    const res  = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: CONFIG.SHEET_ID,
+      range: `${CONFIG.TRADES_TAB}!A:J`,
+    });
+    const rows = (res.result.values || []).slice(1);
+    const sheetTrades = rows.map(r => ({
+      id:           r[0]||'', postedBy:r[1]||'', weekDate:r[2]||'', location:r[3]||'',
+      type:         r[4]||'open', targetPerson:r[5]||'', status:r[6]||'pending',
+      postedAt:     r[7]||'', acceptedBy:r[8]||'', acceptedAt:r[9]||'',
+    })).filter(t => t.id);
+    if (sheetTrades.length) trades = sheetTrades;
+    renderTrades();
+  } catch(e) {
+    console.warn('Trades tab not found or inaccessible — using local data', e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// SHEETS — WRITE TRADE
+// ═══════════════════════════════════════════════════════
+async function sheetsAppendTrade(t) {
+  if (!gapiReady) return;
+  try {
+    await gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: CONFIG.SHEET_ID,
+      range: `${CONFIG.TRADES_TAB}!A:J`,
+      valueInputOption: 'RAW',
+      insertDataOption: 'INSERT_ROWS',
+      resource: { values:[[t.id,t.postedBy,t.weekDate,t.location,t.type,t.targetPerson,t.status,t.postedAt,t.acceptedBy,t.acceptedAt]] },
+    });
+  } catch(e) { console.error('Append trade failed', e); saveLocalTrades(); }
+}
+
+async function sheetsUpdateTradeStatus(t) {
+  if (!gapiReady) { saveLocalTrades(); return; }
+  try {
+    const res = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: CONFIG.SHEET_ID, range: `${CONFIG.TRADES_TAB}!A:A`,
+    });
+    const rowNum = (res.result.values||[]).findIndex(r => r[0] === t.id);
+    if (rowNum < 0) return;
+    const r = rowNum + 1;
+    await gapi.client.sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: CONFIG.SHEET_ID,
+      resource: { valueInputOption:'RAW', data:[
+        { range:`${CONFIG.TRADES_TAB}!G${r}`, values:[[t.status]] },
+        { range:`${CONFIG.TRADES_TAB}!I${r}:J${r}`, values:[[t.acceptedBy, t.acceptedAt]] },
+      ]},
+    });
+  } catch(e) { console.error('Update trade status failed', e); saveLocalTrades(); }
+}
+
+// ═══════════════════════════════════════════════════════
+// SHEETS — SWAP SCHEDULE
+// ═══════════════════════════════════════════════════════
+async function sheetsSwapSchedule(t, week, person1, person2) {
+  if (!gapiReady) return;
+  try {
+    const res  = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: CONFIG.SHEET_ID, range:`${CONFIG.SCHEDULE_TAB}!A:Z`,
+    });
+    const rows  = res.result.values || [];
+    const updates = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row  = rows[i];
+      const col0 = (row[0]||'').trim();
+      // Determine if this row belongs to the target week
+      const rowWeekStart = col0 ? parseDateRangeStart(col0) : null;
+      const prevWeekStart = i > 0 && !(rows[i-1][0]||'').trim() ? null :
+        (i > 0 ? parseDateRangeStart((rows[i-1][0]||'').trim()) : null);
+
+      const belongsToWeek = rowWeekStart === t.weekDate ||
+        (!col0 && prevWeekStart === t.weekDate);
+
+      if (!belongsToWeek) continue;
+
+      for (let j = 2; j < row.length; j++) {
+        const cell = (row[j]||'').trim();
+        if (cell === person1 || cell === person2) {
+          const newVal = cell === person1 ? person2 : person1;
+          updates.push({ range:`${CONFIG.SCHEDULE_TAB}!${colLetter(j+1)}${i+1}`, values:[[newVal]] });
+        }
+      }
+    }
+
+    if (updates.length) {
+      await gapi.client.sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: CONFIG.SHEET_ID,
+        resource: { valueInputOption:'RAW', data: updates },
+      });
+    }
+  } catch(e) { console.error('Schedule swap failed', e); }
+}
+
+async function syncLocalTrades() {
+  const local = JSON.parse(localStorage.getItem('orb_trades')||'[]');
+  for (const t of local) {
+    if (!trades.find(x => x.id === t.id)) {
+      trades.push(t);
+      await sheetsAppendTrade(t);
+    }
+  }
+  localStorage.removeItem('orb_trades');
+  renderTrades();
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+function userLocInWeek(user, w) {
+  if (w.wabash.includes(user)) return 'wabash';
+  if (w.monroe.includes(user)) return 'monroe';
+  return null;
+}
+
+function swapInWeek(w, a, b) {
+  const aLoc = userLocInWeek(a, w);
+  const bLoc = userLocInWeek(b, w);
+  if (!aLoc || !bLoc || aLoc === bLoc) return;
+  w[aLoc].splice(w[aLoc].indexOf(a), 1); w[bLoc].push(a);
+  w[bLoc].splice(w[bLoc].indexOf(b), 1); w[aLoc].push(b);
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+function colLetter(n) {
+  let r = '';
+  while (n > 0) { n--; r = String.fromCharCode(65 + n%26) + r; n = Math.floor(n/26); }
+  return r;
+}
+
+function setBadge(text, state) {
+  const el = document.getElementById('apiBadge');
+  el.textContent = text;
+  el.className = 'api-badge ' + (state === 'live' ? '' : state);
+}
+
+// ─── start ───
+boot();
+</script>
+
+<script src="https://apis.google.com/js/api.js"            onload="gapiLoaded()" defer></script>
+<script src="https://accounts.google.com/gsi/client"       onload="gisLoaded()"  defer></script>
+</body>
+</html>
