@@ -3,85 +3,132 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Office Rotation</title>
+  <title>Karbon | Office Rotation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-light: #dbeafe;
-      --wabash: #7c3aed;
-      --wabash-light: #ede9fe;
-      --wabash-border: #c4b5fd;
-      --monroe: #0891b2;
-      --monroe-light: #cffafe;
-      --monroe-border: #a5f3fc;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --border: #e2e8f0;
-      --text: #1e293b;
-      --muted: #64748b;
-      --current-bg: #fef3c7;
-      --current-border: #f59e0b;
-      --current-text: #92400e;
-      --success: #16a34a;
-      --danger: #dc2626;
+      /* Karbon brand palette */
+      --k-navy:        #1B2B4B;
+      --k-navy-mid:    #243554;
+      --k-navy-light:  #EEF1F7;
+      --k-purple:      #6941C6;
+      --k-purple-mid:  #7F56D9;
+      --k-purple-light:#F4F0FD;
+      --k-purple-border:#D6BBFB;
+      --k-teal:        #0E7490;
+      --k-teal-light:  #E0F2FE;
+      --k-teal-border: #BAE6FD;
+      --k-amber:       #B45309;
+      --k-amber-bg:    #FFFBEB;
+      --k-amber-border:#FDE68A;
+      --k-green:       #027A48;
+      --k-red:         #B42318;
+
+      /* Surfaces */
+      --bg:      #F7F8FB;
+      --surface: #FFFFFF;
+      --border:  #E4E7EE;
+      --text:    #101828;
+      --muted:   #667085;
+
+      /* Location colors */
+      --wabash:        var(--k-purple);
+      --wabash-light:  var(--k-purple-light);
+      --wabash-border: var(--k-purple-border);
+      --monroe:        var(--k-teal);
+      --monroe-light:  var(--k-teal-light);
+      --monroe-border: var(--k-teal-border);
+
+      /* Highlight (current week) */
+      --current-bg:     var(--k-amber-bg);
+      --current-border: var(--k-amber-border);
+      --current-text:   var(--k-amber);
+
+      --success: var(--k-green);
+      --danger:  var(--k-red);
       --radius: 8px;
-      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+      --shadow: 0 1px 2px rgba(16,24,40,0.06), 0 1px 3px rgba(16,24,40,0.1);
+      --shadow-md: 0 4px 8px rgba(16,24,40,0.08), 0 2px 4px rgba(16,24,40,0.06);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
 
     /* ── Header ── */
     header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
+      background: var(--k-navy);
+      padding: 0 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: var(--shadow);
+      height: 56px;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo svg {
+      width: 28px;
+      height: 28px;
     }
 
     header h1 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--primary);
-      letter-spacing: -0.02em;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #FFFFFF;
+      letter-spacing: 0.01em;
+    }
+
+    header h1 span {
+      color: rgba(255,255,255,0.45);
+      font-weight: 400;
+      margin: 0 6px;
     }
 
     .header-right { display: flex; align-items: center; gap: 10px; }
 
     .api-badge {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 600;
       padding: 3px 8px;
       border-radius: 12px;
-      background: #dcfce7;
-      color: #15803d;
+      background: rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.02em;
     }
-    .api-badge.loading { background: #fef9c3; color: #854d0e; }
-    .api-badge.error   { background: #fee2e2; color: #dc2626; }
-    .api-badge.offline { background: #f1f5f9; color: var(--muted); }
+    .api-badge.loading { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+    .api-badge.error   { background: rgba(180,35,24,0.3); color: #FCA5A5; }
+    .api-badge.offline { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); }
 
     select {
-      padding: 7px 10px;
-      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,0.2);
       border-radius: var(--radius);
       font-size: 0.8rem;
-      background: var(--surface);
-      color: var(--text);
+      font-family: inherit;
+      background: rgba(255,255,255,0.1);
+      color: #FFFFFF;
       cursor: pointer;
-      max-width: 160px;
+      max-width: 170px;
+      outline: none;
     }
+    select option { background: var(--k-navy); color: #fff; }
 
     /* ── Layout ── */
     main {
@@ -103,8 +150,8 @@
       justify-content: space-between;
       gap: 12px;
     }
-    .banner.warning { background: var(--current-bg); border: 1px solid var(--current-border); color: var(--current-text); }
-    .banner.info    { background: var(--primary-light); border: 1px solid #93c5fd; color: #1e40af; }
+    .banner.warning { background: var(--k-amber-bg); border: 1px solid var(--k-amber-border); color: var(--k-amber); }
+    .banner.info    { background: var(--k-purple-light); border: 1px solid var(--k-purple-border); color: var(--k-purple); }
     .banner.hidden  { display: none; }
 
     /* ── Week nav ── */
@@ -112,7 +159,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 14px 18px;
+      padding: 12px 18px;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -124,49 +171,53 @@
 
     #weekLabel {
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
+      color: var(--k-navy);
       min-width: 190px;
       text-align: center;
+      letter-spacing: -0.01em;
     }
 
     .current-tag {
       display: inline-block;
-      font-size: 0.65rem;
-      font-weight: 700;
+      font-size: 0.62rem;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      background: var(--primary);
-      color: white;
+      background: var(--k-purple-light);
+      color: var(--k-purple);
+      border: 1px solid var(--k-purple-border);
       padding: 2px 7px;
       border-radius: 10px;
-      margin-left: 6px;
+      margin-left: 8px;
       vertical-align: middle;
     }
 
     .loc-filters { display: flex; gap: 4px; margin-left: auto; }
 
-    button { cursor: pointer; border: none; border-radius: var(--radius); font-size: 0.8rem; font-weight: 500; transition: background 0.12s, color 0.12s; }
+    button { cursor: pointer; border: none; border-radius: var(--radius); font-size: 0.8rem; font-weight: 500; font-family: inherit; transition: background 0.12s, color 0.12s, border-color 0.12s; }
 
     .btn-nav {
-      background: var(--bg);
+      background: var(--surface);
       border: 1px solid var(--border);
-      color: var(--text);
-      padding: 7px 11px;
+      color: var(--muted);
+      padding: 6px 10px;
       line-height: 1;
     }
-    .btn-nav:hover:not(:disabled) { background: var(--border); }
-    .btn-nav:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-nav:hover:not(:disabled) { background: var(--k-navy-light); border-color: #C8CDD9; color: var(--text); }
+    .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
 
     .btn-filter {
       padding: 6px 14px;
-      background: var(--bg);
+      background: var(--surface);
       border: 1px solid var(--border);
       color: var(--muted);
+      font-size: 0.78rem;
     }
-    .btn-filter:hover { background: var(--border); }
-    .btn-filter.active        { background: var(--primary); border-color: var(--primary); color: white; }
-    .btn-filter.active.wabash { background: var(--wabash); border-color: var(--wabash); }
-    .btn-filter.active.monroe { background: var(--monroe); border-color: var(--monroe); }
+    .btn-filter:hover { background: var(--k-navy-light); color: var(--text); }
+    .btn-filter.active        { background: var(--k-navy); border-color: var(--k-navy); color: white; }
+    .btn-filter.active.wabash { background: var(--k-purple); border-color: var(--k-purple); }
+    .btn-filter.active.monroe { background: var(--k-teal); border-color: var(--k-teal); }
 
     /* ── Roster ── */
     .roster { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -182,7 +233,7 @@
     .loc-card.hidden { display: none; }
 
     .loc-card-header {
-      padding: 11px 14px;
+      padding: 12px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -191,34 +242,34 @@
     .loc-card-header.wabash { background: var(--wabash-light); border-bottom-color: var(--wabash-border); }
     .loc-card-header.monroe { background: var(--monroe-light); border-bottom-color: var(--monroe-border); }
 
-    .loc-title { font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
-    .loc-title.wabash { color: var(--wabash); }
-    .loc-title.monroe { color: var(--monroe); }
+    .loc-title { font-weight: 600; font-size: 0.82rem; display: flex; align-items: center; gap: 8px; letter-spacing: 0.01em; }
+    .loc-title.wabash { color: var(--k-purple); }
+    .loc-title.monroe { color: var(--k-teal); }
 
     .count-pill {
-      background: rgba(0,0,0,0.1);
+      background: rgba(0,0,0,0.08);
       color: inherit;
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 700;
-      padding: 2px 7px;
+      padding: 2px 8px;
       border-radius: 10px;
     }
 
     .name-list { list-style: none; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
 
     .chip {
-      padding: 4px 11px;
+      padding: 4px 12px;
       border-radius: 20px;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 500;
-      background: var(--bg);
+      background: var(--k-navy-light);
       border: 1px solid var(--border);
-      color: var(--text);
+      color: var(--k-navy);
     }
     .chip.you {
-      background: var(--current-bg);
-      border-color: var(--current-border);
-      color: var(--current-text);
+      background: var(--k-purple-light);
+      border-color: var(--k-purple-border);
+      color: var(--k-purple);
       font-weight: 700;
     }
 
@@ -238,7 +289,7 @@
       margin-bottom: 14px;
     }
 
-    .card-title { font-size: 0.95rem; font-weight: 700; }
+    .card-title { font-size: 0.9rem; font-weight: 600; color: var(--k-navy); letter-spacing: -0.01em; }
 
     .schedule-grid {
       display: grid;
@@ -265,16 +316,16 @@
     .empty-msg { color: var(--muted); font-size: 0.85rem; padding: 20px 0; text-align: center; }
 
     /* ── Trade board ── */
-    .btn-primary { background: var(--primary); color: white; padding: 7px 14px; }
-    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary { background: var(--k-purple); color: white; padding: 7px 14px; box-shadow: 0 1px 2px rgba(105,65,198,0.2); }
+    .btn-primary:hover { background: var(--k-purple-mid); }
 
     .btn-sm { padding: 5px 11px; font-size: 0.75rem; }
-    .btn-success { background: var(--success); color: white; }
-    .btn-success:hover { background: #15803d; }
+    .btn-success { background: var(--success); color: white; box-shadow: 0 1px 2px rgba(2,122,72,0.2); }
+    .btn-success:hover { background: #05603A; }
     .btn-danger  { background: var(--danger); color: white; }
-    .btn-danger:hover  { background: #b91c1c; }
-    .btn-ghost   { background: var(--bg); border: 1px solid var(--border); color: var(--muted); }
-    .btn-ghost:hover   { background: var(--border); }
+    .btn-danger:hover  { background: #912018; }
+    .btn-ghost   { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+    .btn-ghost:hover   { background: var(--k-navy-light); color: var(--text); }
 
     .trade-list { display: flex; flex-direction: column; gap: 10px; }
 
@@ -349,7 +400,7 @@
       transition: border-color 0.12s, background 0.12s;
     }
     .type-opt:hover { border-color: #93c5fd; }
-    .type-opt.selected { border-color: var(--primary); background: var(--primary-light); }
+    .type-opt.selected { border-color: var(--k-purple); background: var(--k-purple-light); }
     .type-opt-title { font-size: 0.82rem; font-weight: 700; margin-bottom: 3px; }
     .type-opt-desc  { font-size: 0.72rem; color: var(--muted); }
 
@@ -369,7 +420,14 @@
 <body>
 
 <header>
-  <h1>Office Rotation</h1>
+  <div class="header-logo">
+    <!-- Karbon "K" logomark -->
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="6" fill="#6941C6"/>
+      <path d="M9 8h3.5v6.8l5.8-6.8H22l-6.2 7 6.6 9H18l-4.8-6.8-1.2 1.3V24H9V8z" fill="white"/>
+    </svg>
+    <h1>Karbon <span>/</span> Office Rotation</h1>
+  </div>
   <div class="header-right">
     <span id="apiBadge" class="api-badge loading">Loading…</span>
     <select id="nameSelect">
