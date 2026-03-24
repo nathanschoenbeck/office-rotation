@@ -6,62 +6,50 @@
   <title>Karbon | Office Rotation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* ═══════════════════════════════════════════
+       KARBON BRAND — "Built of Karbon" / BC3 2025
+       Palette: Black · White · Coral · Gold · Cobalt
+       Font: Montserrat (Metric fallback)
+       Aesthetic: Brutalist Luxe
+    ═══════════════════════════════════════════ */
     :root {
-      /* Karbon exact charcoal palette (from screenshot) */
-      --k-charcoal:     #252729;   /* header, sidebar, sub-nav */
-      --k-charcoal-mid: #2E3035;   /* hover states on dark */
-      --k-charcoal-tab: #3A3C41;   /* active tab on dark bar */
-      --k-charcoal-border: rgba(255,255,255,0.1);
+      --black:   #000000;
+      --white:   #FFFFFF;
+      --coral:   #EE7F73;   /* large backgrounds & left accent bar only */
+      --gold:    #DDB88B;   /* stats, highlights on dark, warmth */
+      --cobalt:  #2522C1;   /* energized intelligence — use sparingly */
 
-      /* Accent — matches Karbon's link/action blue */
-      --k-blue:         #4A7CF7;
-      --k-blue-light:   #EEF3FF;
-      --k-blue-border:  #C3D3FB;
+      --bg:      #F5F5F5;
+      --surface: #FFFFFF;
+      --border:  #E0E0E0;
+      --text:    #111111;
+      --muted:   #6B6B6B;
+      --radius:  4px;
+      --shadow:  0 1px 3px rgba(0,0,0,0.08);
 
-      /* Location colors — kept but toned down */
-      --wabash:         #6941C6;
-      --wabash-light:   #F4F0FD;
-      --wabash-border:  #DDD0F7;
-      --monroe:         #0884A3;
-      --monroe-light:   #EAF7FB;
-      --monroe-border:  #B3E4F0;
-
-      /* Semantic */
-      --success:        #027A48;
-      --success-bg:     #ECFDF3;
-      --danger:         #B42318;
-      --danger-bg:      #FEF3F2;
-      --amber:          #92400E;
-      --amber-bg:       #FFFBEB;
-      --amber-border:   #FDE68A;
-
-      /* Light surface system */
-      --bg:       #F4F5F7;
-      --surface:  #FFFFFF;
-      --border:   #E1E4E8;
-      --text:     #1A1D23;
-      --muted:    #6B7280;
-      --radius:   6px;
-      --shadow:   0 1px 2px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.06);
+      /* Wabash = Cobalt (energized intelligence) */
+      /* Monroe = Gold warmth */
+      --wabash: var(--cobalt);
+      --monroe: #A07840;   /* darker Gold for text legibility */
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Top header bar (matches Karbon's dark top bar) ── */
+    /* ── Header — Black, white text (confidence + authority) ── */
     header {
-      background: var(--k-charcoal);
-      height: 48px;
-      padding: 0 24px;
+      background: var(--black);
+      height: 52px;
+      padding: 0 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -70,148 +58,161 @@
       z-index: 100;
     }
 
-    .header-logo { display: flex; align-items: center; gap: 10px; }
+    .header-logo { display: flex; align-items: center; gap: 14px; }
+
+    /* Karbon monogram mark */
+    .k-mark {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+    }
 
     .k-wordmark {
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: #FFFFFF;
+      color: var(--white);
     }
 
     .header-divider {
       width: 1px;
-      height: 16px;
-      background: rgba(255,255,255,0.2);
-      margin: 0 4px;
+      height: 18px;
+      background: rgba(255,255,255,0.25);
     }
 
     .header-page {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 400;
-      color: rgba(255,255,255,0.6);
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.02em;
     }
 
     .header-right { display: flex; align-items: center; gap: 10px; }
 
     .api-badge {
-      font-size: 0.65rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
       padding: 3px 8px;
-      border-radius: 10px;
+      border-radius: 2px;
       background: rgba(255,255,255,0.12);
-      color: rgba(255,255,255,0.7);
+      color: rgba(255,255,255,0.65);
     }
-    .api-badge.error   { background: rgba(180,35,24,0.35); color: #FCA5A5; }
-    .api-badge.offline { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.4); }
+    .api-badge.error   { background: rgba(238,127,115,0.25); color: var(--coral); }
+    .api-badge.offline { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.3); }
 
-    /* ── Sub-nav bar (like Karbon's detail/week bar) ── */
+    /* ── Sub-nav — Black, Coral active tab underline ── */
     .sub-nav {
-      background: var(--k-charcoal);
-      border-top: 1px solid rgba(255,255,255,0.07);
-      padding: 0 24px;
+      background: var(--black);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 0 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
       height: 44px;
       position: sticky;
-      top: 48px;
+      top: 52px;
       z-index: 99;
+      flex-wrap: wrap;
+      gap: 0;
     }
 
     .week-controls { display: flex; align-items: center; gap: 6px; }
 
     #weekLabel {
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: #FFFFFF;
-      min-width: 180px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--white);
+      min-width: 185px;
       text-align: center;
+      letter-spacing: 0.02em;
     }
 
     .current-tag {
       display: inline-block;
-      font-size: 0.6rem;
-      font-weight: 600;
+      font-size: 0.58rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.07em;
-      background: rgba(255,255,255,0.15);
-      color: rgba(255,255,255,0.9);
+      letter-spacing: 0.09em;
+      background: var(--coral);
+      color: var(--black);
       padding: 2px 7px;
-      border-radius: 10px;
-      margin-left: 7px;
+      margin-left: 8px;
       vertical-align: middle;
     }
 
-    /* Tabs (like Karbon's Timeline / Tasks / Documents) */
+    /* Tabs — Coral active underline (brand signature) */
     .loc-filters { display: flex; height: 44px; }
 
-    button { cursor: pointer; border: none; font-family: inherit; transition: background 0.12s, color 0.12s; }
+    button { cursor: pointer; border: none; font-family: inherit; transition: all 0.12s; }
 
     .btn-nav {
       background: transparent;
-      color: rgba(255,255,255,0.55);
+      color: rgba(255,255,255,0.45);
       padding: 6px 9px;
-      font-size: 0.75rem;
-      border-radius: 4px;
+      font-size: 0.8rem;
       line-height: 1;
+      border-radius: 2px;
     }
-    .btn-nav:hover:not(:disabled) { color: #fff; background: rgba(255,255,255,0.08); }
-    .btn-nav:disabled { opacity: 0.25; cursor: not-allowed; }
+    .btn-nav:hover:not(:disabled) { color: var(--white); background: rgba(255,255,255,0.07); }
+    .btn-nav:disabled { opacity: 0.2; cursor: not-allowed; }
 
     .btn-filter {
-      padding: 0 16px;
+      padding: 0 18px;
       background: transparent;
-      color: rgba(255,255,255,0.55);
-      font-size: 0.78rem;
-      font-weight: 500;
-      border-radius: 0;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
       border-bottom: 2px solid transparent;
       height: 44px;
+      border-radius: 0;
     }
-    .btn-filter:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.04); }
-    .btn-filter.active        { color: #FFFFFF; border-bottom-color: #FFFFFF; }
-    .btn-filter.active.wabash { color: #C4B5FD; border-bottom-color: #C4B5FD; }
-    .btn-filter.active.monroe { color: #67E8F9; border-bottom-color: #67E8F9; }
+    .btn-filter:hover { color: rgba(255,255,255,0.85); }
+    .btn-filter.active { color: var(--white); border-bottom-color: var(--coral); }
 
-    /* Header select — on dark bg */
+    /* Header select — on black */
     select {
       padding: 5px 9px;
-      border: 1px solid rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.2);
       border-radius: var(--radius);
-      font-size: 0.76rem;
+      font-size: 0.74rem;
       font-family: inherit;
-      background: rgba(255,255,255,0.08);
-      color: #FFFFFF;
+      font-weight: 500;
+      background: rgba(255,255,255,0.07);
+      color: var(--white);
       cursor: pointer;
-      max-width: 160px;
+      max-width: 165px;
       outline: none;
     }
-    select option { background: #252729; color: #fff; }
+    select option { background: #111; color: #fff; }
 
     /* ── Banners ── */
     .banner {
-      border-radius: var(--radius);
       padding: 10px 14px;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      border-left: 3px solid var(--coral);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
-    .banner.warning { background: var(--amber-bg); border: 1px solid var(--amber-border); color: var(--amber); }
-    .banner.info    { background: var(--k-blue-light); border: 1px solid var(--k-blue-border); color: #1e40af; }
+    .banner.warning { border-left-color: var(--gold); color: #7a5a20; }
+    .banner.info    { border-left-color: var(--cobalt); color: var(--cobalt); background: #F0F0FA; }
     .banner.hidden  { display: none; }
 
     /* ── Layout ── */
     main {
-      max-width: 1140px;
+      max-width: 1160px;
       margin: 0 auto;
-      padding: 20px 20px;
+      padding: 24px 24px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -221,87 +222,84 @@
     .roster { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 600px) { .roster { grid-template-columns: 1fr; } }
 
+    /* Cards — white, coral left accent bar (brand layout signature) */
     .loc-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
+      border-left: 4px solid var(--coral);
       box-shadow: var(--shadow);
     }
     .loc-card.hidden { display: none; }
 
     .loc-card-header {
-      padding: 11px 16px;
+      padding: 12px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--border);
-      background: var(--bg);
     }
 
     .loc-title {
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.68rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.1em;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
-    .loc-title.wabash { color: var(--wabash); }
+    .loc-title.wabash { color: var(--cobalt); }
     .loc-title.monroe { color: var(--monroe); }
 
     .count-pill {
-      font-size: 0.65rem;
+      font-size: 0.62rem;
       font-weight: 700;
-      padding: 1px 7px;
-      border-radius: 10px;
-      letter-spacing: 0;
+      padding: 2px 8px;
+      border-radius: 2px;
+      letter-spacing: 0.02em;
     }
-    .loc-title.wabash .count-pill { background: var(--wabash-light); color: var(--wabash); border: 1px solid var(--wabash-border); }
-    .loc-title.monroe .count-pill { background: var(--monroe-light); color: var(--monroe); border: 1px solid var(--monroe-border); }
+    .loc-title.wabash .count-pill { background: rgba(37,34,193,0.08); color: var(--cobalt); }
+    .loc-title.monroe .count-pill { background: rgba(221,184,139,0.25); color: var(--monroe); }
 
     .name-list { list-style: none; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 5px; }
 
     .chip {
-      padding: 3px 10px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 400;
+      padding: 4px 10px;
+      border-radius: 2px;
+      font-size: 0.72rem;
+      font-weight: 500;
       background: var(--bg);
       border: 1px solid var(--border);
       color: var(--text);
     }
     .chip.you {
-      background: var(--k-blue-light);
-      border-color: var(--k-blue-border);
-      color: var(--k-blue);
-      font-weight: 600;
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--black);
+      font-weight: 700;
     }
 
-    /* ── Cards ── */
+    /* ── Cards (schedule + trade board) ── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-left: 4px solid var(--coral);
       box-shadow: var(--shadow);
-      overflow: hidden;
     }
 
     .card-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 13px 18px;
+      padding: 12px 18px;
       border-bottom: 1px solid var(--border);
-      background: var(--bg);
     }
 
     .card-title {
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.68rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.1em;
       color: var(--muted);
     }
 
@@ -316,83 +314,81 @@
 
     .sched-item {
       border: 1px solid var(--border);
-      border-left: 3px solid var(--border);
-      border-radius: var(--radius);
+      border-top: 3px solid var(--border);
       padding: 10px 12px;
-      background: var(--surface);
     }
-    .sched-item.wabash-w { border-left-color: var(--wabash); }
-    .sched-item.monroe-w { border-left-color: var(--monroe); }
-    .sched-item.now      { background: var(--amber-bg); border-color: var(--amber-border); border-left-color: #F59E0B; }
+    .sched-item.wabash-w { border-top-color: var(--cobalt); }
+    .sched-item.monroe-w { border-top-color: var(--gold); }
+    .sched-item.now      { background: rgba(221,184,139,0.15); border-top-color: var(--gold); border-color: rgba(221,184,139,0.5); }
 
-    .sched-week  { font-size: 0.68rem; font-weight: 500; color: var(--muted); margin-bottom: 4px; }
-    .sched-loc   { font-size: 0.85rem; font-weight: 600; }
-    .sched-loc.wabash { color: var(--wabash); }
+    .sched-week  { font-size: 0.65rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .sched-loc   { font-size: 0.82rem; font-weight: 700; }
+    .sched-loc.wabash { color: var(--cobalt); }
     .sched-loc.monroe { color: var(--monroe); }
-    .sched-now-tag { font-size: 0.62rem; color: var(--amber); margin-top: 3px; font-weight: 600; }
+    .sched-now-tag { font-size: 0.6rem; color: #7a5a20; margin-top: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 
-    .empty-msg { color: var(--muted); font-size: 0.82rem; padding: 24px; text-align: center; }
+    .empty-msg { color: var(--muted); font-size: 0.8rem; padding: 28px; text-align: center; font-weight: 500; }
 
     /* ── Buttons ── */
     .btn-primary {
-      background: var(--k-charcoal);
-      color: white;
-      padding: 6px 14px;
-      font-size: 0.78rem;
-      font-weight: 500;
+      background: var(--black);
+      color: var(--white);
+      padding: 7px 16px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
       border-radius: var(--radius);
     }
-    .btn-primary:hover { background: var(--k-charcoal-mid); }
+    .btn-primary:hover { background: #222; }
 
-    .btn-sm { padding: 5px 10px; font-size: 0.73rem; }
+    .btn-sm { padding: 5px 11px; font-size: 0.68rem; }
 
-    .btn-success { background: var(--success); color: white; border-radius: var(--radius); }
-    .btn-success:hover { background: #05603A; }
-    .btn-danger  { background: var(--danger); color: white; border-radius: var(--radius); }
-    .btn-danger:hover  { background: #912018; }
-    .btn-ghost   { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: var(--radius); }
+    .btn-success { background: #1A6B3C; color: white; border-radius: var(--radius); font-weight: 600; font-size: 0.72rem; }
+    .btn-success:hover { background: #145530; }
+    .btn-danger  { background: #C0392B; color: white; border-radius: var(--radius); font-weight: 600; font-size: 0.72rem; }
+    .btn-danger:hover  { background: #962d22; }
+    .btn-ghost   { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: var(--radius); font-weight: 500; }
     .btn-ghost:hover   { background: var(--bg); color: var(--text); }
-    .btn-link    { background: none; color: var(--k-blue); font-size: 0.78rem; font-weight: 500; text-decoration: underline; padding: 0; border-radius: 0; }
 
     /* ── Trade board ── */
     .trade-list { display: flex; flex-direction: column; }
 
     .trade-row {
       border-bottom: 1px solid var(--border);
-      padding: 12px 18px;
+      padding: 13px 18px;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
     }
     .trade-row:last-child { border-bottom: none; }
     .trade-row:hover { background: var(--bg); }
-    .trade-row.for-me { background: var(--k-blue-light); }
-    .trade-row.for-me:hover { background: #e4ecff; }
+    .trade-row.for-me { background: rgba(37,34,193,0.04); border-left: 3px solid var(--cobalt); padding-left: 15px; }
 
     .trade-type-tag {
       display: inline-block;
-      font-size: 0.62rem;
-      font-weight: 600;
+      font-size: 0.58rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       padding: 2px 7px;
-      border-radius: 4px;
+      border-radius: 2px;
       margin-bottom: 4px;
     }
-    .trade-type-tag.open { background: var(--success-bg); color: var(--success); }
-    .trade-type-tag.swap { background: var(--k-blue-light); color: var(--k-blue); }
+    .trade-type-tag.open { background: rgba(26,107,60,0.1); color: #1A6B3C; }
+    .trade-type-tag.swap { background: rgba(37,34,193,0.08); color: var(--cobalt); }
 
-    .trade-desc  { font-size: 0.82rem; color: var(--text); line-height: 1.4; }
-    .trade-meta  { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
-    .trade-actions { display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
+    .trade-desc  { font-size: 0.8rem; color: var(--text); line-height: 1.45; font-weight: 500; }
+    .trade-meta  { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+    .trade-actions { display: flex; gap: 7px; align-items: center; flex-shrink: 0; padding-top: 2px; }
 
     /* ── Modal ── */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.6);
       z-index: 200;
       display: flex;
       align-items: center;
@@ -403,69 +399,76 @@
 
     .modal {
       background: var(--surface);
-      border-radius: 8px;
       width: 100%;
       max-width: 460px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
       overflow: hidden;
+      border-left: 4px solid var(--coral);
     }
 
     .modal-header {
-      background: var(--k-charcoal);
-      padding: 14px 20px;
+      background: var(--black);
+      padding: 15px 20px;
     }
-    .modal-header h2 { font-size: 0.88rem; font-weight: 600; color: #FFFFFF; }
+    .modal-header h2 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
 
     .modal-body { padding: 20px; }
 
     .form-group { margin-bottom: 14px; }
     label {
       display: block;
-      font-size: 0.68rem;
-      font-weight: 600;
+      font-size: 0.62rem;
+      font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       margin-bottom: 5px;
     }
     .form-group select {
       width: 100%;
       padding: 8px 10px;
       border: 1px solid var(--border);
+      border-bottom: 2px solid var(--border);
       border-radius: var(--radius);
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-family: inherit;
       color: var(--text);
       background: var(--surface);
       outline: none;
     }
-    .form-group select:focus { border-color: var(--k-blue); }
+    .form-group select:focus { border-bottom-color: var(--black); }
 
     .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .type-opt {
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 12px;
+      border-bottom: 2px solid var(--border);
+      padding: 11px 12px;
       cursor: pointer;
       text-align: center;
-      transition: border-color 0.12s, background 0.12s;
+      transition: all 0.12s;
     }
-    .type-opt:hover { border-color: #aab4c8; background: var(--bg); }
-    .type-opt.selected { border-color: var(--k-charcoal); background: var(--k-charcoal); }
-    .type-opt.selected .type-opt-title { color: #fff; }
-    .type-opt.selected .type-opt-desc  { color: rgba(255,255,255,0.6); }
-    .type-opt-title { font-size: 0.8rem; font-weight: 600; margin-bottom: 2px; color: var(--text); }
-    .type-opt-desc  { font-size: 0.7rem; color: var(--muted); }
+    .type-opt:hover { border-color: #aaa; background: var(--bg); }
+    .type-opt.selected { border-color: var(--black); border-bottom-color: var(--coral); background: var(--black); }
+    .type-opt.selected .type-opt-title { color: var(--white); }
+    .type-opt.selected .type-opt-desc  { color: rgba(255,255,255,0.55); }
+    .type-opt-title { font-size: 0.78rem; font-weight: 700; margin-bottom: 2px; color: var(--text); letter-spacing: 0.02em; }
+    .type-opt-desc  { font-size: 0.68rem; color: var(--muted); }
 
     .trade-preview {
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
       padding: 10px 12px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--muted);
       min-height: 38px;
       font-style: italic;
+      line-height: 1.5;
     }
 
     .modal-actions {
@@ -482,6 +485,11 @@
 
 <header>
   <div class="header-logo">
+    <!-- Karbon monogram — white on black -->
+    <svg class="k-mark" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" fill="#000000"/>
+      <path d="M7 6h3v6.5l5.5-6.5h3.8L13.2 13l6.3 9H15.6l-4.6-6.8-1 1.1V22H7V6z" fill="#FFFFFF"/>
+    </svg>
     <span class="k-wordmark">Karbon</span>
     <div class="header-divider"></div>
     <span class="header-page">Office Rotation</span>
