@@ -55,13 +55,6 @@
 
     .header-logo { display: flex; align-items: center; gap: 14px; }
 
-    /* Karbon monogram mark */
-    .k-mark {
-      width: 28px;
-      height: 28px;
-      flex-shrink: 0;
-    }
-
     .k-wordmark {
       font-size: 0.72rem;
       font-weight: 700;
@@ -514,11 +507,6 @@
 
 <header>
   <div class="header-logo">
-    <!-- Karbon monogram — white on black -->
-    <svg class="k-mark" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="28" height="28" fill="#000000"/>
-      <path d="M7 6h3v6.5l5.5-6.5h3.8L13.2 13l6.3 9H15.6l-4.6-6.8-1 1.1V22H7V6z" fill="#FFFFFF"/>
-    </svg>
     <span class="k-wordmark">Karbon</span>
     <div class="header-divider"></div>
     <span class="header-page">Office Schedule</span>
@@ -694,6 +682,7 @@ function boot() {
     setBadge('Not configured', 'offline');
   }
   loadLocalTrades();
+  loadLocalSchedule();
   buildNameSelect();
   renderAll();
   if (configured) setBadge('Connecting...', 'loading');
@@ -979,6 +968,8 @@ async function claimDay(day) {
     // Shayaan: always overflow, auto-approved
     if (overflowFull) { alert('Overflow is full for that day.'); return; }
     overflow[day].push(currentUser);
+    saveLocalSchedule();
+    if (!isSignedIn) document.getElementById('signInBanner').classList.remove('hidden');
     await sheetsClaimDay(currentUser, day, true, true);
     renderAll();
     return;
@@ -1008,6 +999,8 @@ async function claimDay(day) {
       approvedAt: '',
     };
     overflowRequests.push(req);
+    saveLocalSchedule();
+    if (!isSignedIn) document.getElementById('signInBanner').classList.remove('hidden');
     await sheetsRequestOverflow(currentUser, day);
     alert('Overflow request submitted. Waiting for manager approval.');
     renderAll();
@@ -1016,6 +1009,8 @@ async function claimDay(day) {
 
   // Regular claim
   schedule[day].push(currentUser);
+  saveLocalSchedule();
+  if (!isSignedIn) document.getElementById('signInBanner').classList.remove('hidden');
   await sheetsClaimDay(currentUser, day, false, false);
   renderAll();
 }
@@ -1047,6 +1042,7 @@ async function approveOverflow(id) {
   req.approvedBy = currentUser;
   req.approvedAt = new Date().toISOString();
   overflow[req.day].push(req.name);
+  saveLocalSchedule();
   await sheetsApproveOverflow(req);
   renderAll();
 }
@@ -1055,6 +1051,7 @@ async function denyOverflow(id) {
   const req = overflowRequests.find(r => r.id === id);
   if (!req) return;
   req.status = 'denied';
+  saveLocalSchedule();
   await sheetsApproveOverflow(req);
   renderAll();
 }
@@ -1243,6 +1240,21 @@ function saveLocalTrades() {
 function loadLocalTrades() {
   try { trades = JSON.parse(localStorage.getItem('orb_trades') || '[]'); } catch(e) {}
 }
+function saveLocalSchedule() {
+  localStorage.setItem('orb_schedule', JSON.stringify(schedule));
+  localStorage.setItem('orb_overflow', JSON.stringify(overflow));
+  localStorage.setItem('orb_overflow_reqs', JSON.stringify(overflowRequests));
+}
+function loadLocalSchedule() {
+  try {
+    const s = localStorage.getItem('orb_schedule');
+    const o = localStorage.getItem('orb_overflow');
+    const r = localStorage.getItem('orb_overflow_reqs');
+    if (s) schedule         = JSON.parse(s);
+    if (o) overflow         = JSON.parse(o);
+    if (r) overflowRequests = JSON.parse(r);
+  } catch(e) {}
+}
 
 // ═══════════════════════════════════════════════════════
 // GOOGLE API — GAPI + GIS
@@ -1276,6 +1288,7 @@ function gisLoaded() {
       isSignedIn = true;
       document.getElementById('signInBanner').classList.add('hidden');
       await syncLocalTrades();
+      await syncLocalSchedule();
     },
   });
 }
@@ -1305,6 +1318,9 @@ async function sheetsLoadSchedule() {
     });
     buildNameSelect();
     renderAll();
+    localStorage.removeItem('orb_schedule');
+    localStorage.removeItem('orb_overflow');
+    localStorage.removeItem('orb_overflow_reqs');
     setBadge('Live', 'live');
   } catch(e) {
     console.error('Schedule load failed', e);
@@ -1333,6 +1349,9 @@ async function sheetsLoadOverflow() {
         overflow[r.day].push(r.name);
       }
     });
+    localStorage.removeItem('orb_schedule');
+    localStorage.removeItem('orb_overflow');
+    localStorage.removeItem('orb_overflow_reqs');
     renderAll();
   } catch(e) {
     console.warn('Overflow tab not found, using empty state', e);
@@ -1504,6 +1523,43 @@ async function syncLocalTrades() {
   }
   localStorage.removeItem('orb_trades');
   renderTrades();
+}
+
+async function syncLocalSchedule() {
+  const localSched = JSON.parse(localStorage.getItem('orb_schedule') || 'null');
+  const localOv    = JSON.parse(localStorage.getItem('orb_overflow') || 'null');
+  const localReqs  = JSON.parse(localStorage.getItem('orb_overflow_reqs') || '[]');
+
+  if (localSched) {
+    for (const day of ['tuesday','wednesday','thursday']) {
+      for (const name of (localSched[day] || [])) {
+        if (!schedule[day].includes(name)) {
+          schedule[day].push(name);
+          await sheetsClaimDay(name, day, false, false);
+        }
+      }
+    }
+  }
+  if (localOv) {
+    for (const day of ['tuesday','wednesday','thursday']) {
+      for (const name of (localOv[day] || [])) {
+        if (!overflow[day].includes(name)) {
+          overflow[day].push(name);
+          await sheetsClaimDay(name, day, true, true);
+        }
+      }
+    }
+  }
+  for (const req of localReqs) {
+    if (!overflowRequests.find(r => r.id === req.id)) {
+      overflowRequests.push(req);
+      await sheetsRequestOverflow(req.name, req.day);
+    }
+  }
+  localStorage.removeItem('orb_schedule');
+  localStorage.removeItem('orb_overflow');
+  localStorage.removeItem('orb_overflow_reqs');
+  renderAll();
 }
 
 // ═══════════════════════════════════════════════════════
