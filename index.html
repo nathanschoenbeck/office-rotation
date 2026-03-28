@@ -797,7 +797,7 @@ function buildDayCard(day) {
     const ovChips = document.createElement('span');
     ovChips.innerHTML = overflowNames.map(n => {
       const isYou = n === currentUser;
-      return `<span class="chip${isYou ? ' you' : ''}" style="font-size:0.68rem; padding:2px 7px;">${n}${isYou ? ' (you)' : ''}</span>`;
+      return `<span class="chip${isYou ? ' you' : ''}" style="font-size:0.68rem; padding:2px 7px;">${esc(n)}${isYou ? ' (you)' : ''}</span>`;
     }).join(' ');
     ovSection.appendChild(ovChips);
   }
@@ -821,31 +821,26 @@ function buildDayCard(day) {
 
 function canClaim(day) {
   if (!currentUser) return false;
-  // Already assigned?
-  if (getUserDay(currentUser) || getUserOverflowDay(currentUser)) return false;
-
   const isSpecial = !!SPECIAL_USERS[currentUser];
+  const team = TEAMS[currentUser];
+  if (!isSpecial && !team) return false; // manager or unknown — can't claim
+  if (getUserDay(currentUser) || getUserOverflowDay(currentUser)) return false; // already assigned
 
   if (isSpecial) {
-    // Special users go to overflow; check overflow capacity
     return overflow[day].length < OVERFLOW_CAP;
   }
 
-  // Regular user
-  const team = TEAMS[currentUser];
-  if (!team) return false;
-
   const regularFull = schedule[day].length >= REGULAR_CAP;
   const overflowFull = overflow[day].length >= OVERFLOW_CAP;
+  const teamCount = schedule[day].filter(n => TEAMS[n] === team).length;
+  const teamCapHit = teamCount >= TEAM_CAPS[team];
 
   if (!regularFull) {
-    // Check team cap
-    const teamCount = schedule[day].filter(n => TEAMS[n] === team).length;
-    return teamCount < TEAM_CAPS[team];
+    return !teamCapHit; // can claim regular slot
+  } else {
+    // regular is full — only offer overflow if team cap is NOT hit
+    return !overflowFull && !teamCapHit;
   }
-
-  // Regular full — can request overflow if not full
-  return !overflowFull;
 }
 
 function renderYourDay() {
@@ -895,9 +890,9 @@ function buildTradeCard(t) {
 
   let desc;
   if (t.type === 'open') {
-    desc = `<strong>${t.postedBy}</strong> is available <strong>${capitalize(t.day)}</strong> — open to any swap`;
+    desc = `<strong>${esc(t.postedBy)}</strong> is available <strong>${esc(capitalize(t.day))}</strong> — open to any swap`;
   } else {
-    desc = `<strong>${t.postedBy}</strong> wants to swap <strong>${capitalize(t.day)}</strong> with <strong>${t.targetPerson}</strong>`;
+    desc = `<strong>${esc(t.postedBy)}</strong> wants to swap <strong>${esc(capitalize(t.day))}</strong> with <strong>${esc(t.targetPerson)}</strong>`;
   }
 
   let actions = '';
@@ -948,7 +943,7 @@ function renderOverflowRequests() {
     row.className = 'trade-row';
     row.innerHTML = `
       <div style="flex:1">
-        <div class="trade-desc"><strong>${req.name}</strong> wants to come in <strong>${capitalize(req.day)}</strong></div>
+        <div class="trade-desc"><strong>${esc(req.name)}</strong> wants to come in <strong>${esc(capitalize(req.day))}</strong></div>
         <div class="trade-meta">Requested ${new Date(req.requestedAt).toLocaleDateString()}</div>
       </div>
       <div class="trade-actions">
@@ -962,13 +957,14 @@ function renderOverflowRequests() {
 // ═══════════════════════════════════════════════════════
 // SIGNUP / CLAIM LOGIC
 // ═══════════════════════════════════════════════════════
-function claimDay(day) {
+async function claimDay(day) {
   if (!currentUser) { alert('Select your name first.'); return; }
 
   const isSpecial = !!SPECIAL_USERS[currentUser];
-  const team      = TEAMS[currentUser];
+  const team = TEAMS[currentUser];
 
-  // Check: already assigned?
+  if (!isSpecial && !team) { alert('You are not eligible to claim a day.'); return; }
+
   const alreadyDay = getUserDay(currentUser);
   const alreadyOverflow = getUserOverflowDay(currentUser);
   if (alreadyDay || alreadyOverflow) {
@@ -980,26 +976,29 @@ function claimDay(day) {
   const overflowFull = overflow[day].length >= OVERFLOW_CAP;
 
   if (isSpecial) {
-    // Shayaan: always goes to overflow, auto-approved
+    // Shayaan: always overflow, auto-approved
     if (overflowFull) { alert('Overflow is full for that day.'); return; }
     overflow[day].push(currentUser);
-    sheetsClaimDay(currentUser, day, true, true);
+    await sheetsClaimDay(currentUser, day, true, true);
     renderAll();
     return;
   }
 
   // Regular user: check team cap
   const teamCount = schedule[day].filter(n => TEAMS[n] === team).length;
-  if (!regularFull && teamCount >= TEAM_CAPS[team]) {
-    alert(`Your team (${capitalize(team)}'s) already has ${TEAM_CAPS[team]} people on ${capitalize(day)}. Try another day.`);
+  const teamCapHit = teamCount >= TEAM_CAPS[team];
+
+  if (teamCapHit) {
+    // Team cap hit — blocked regardless of regular vs overflow
+    alert(`Your team already has the maximum people on ${capitalize(day)}. Please pick a different day.`);
     return;
   }
 
   if (regularFull) {
-    // Offer overflow
-    if (overflowFull) { alert('Both regular and overflow are full for that day.'); return; }
+    // Regular full, team cap OK — offer overflow
+    if (overflowFull) { alert('Both regular and overflow desks are full for that day.'); return; }
     if (!confirm(`Regular desks are full. Request an overflow desk for ${capitalize(day)}? This requires manager approval.`)) return;
-    overflowRequests.push({
+    const req = {
       id: crypto.randomUUID(),
       name: currentUser,
       day,
@@ -1007,8 +1006,9 @@ function claimDay(day) {
       status: 'pending',
       approvedBy: '',
       approvedAt: '',
-    });
-    sheetsRequestOverflow(currentUser, day);
+    };
+    overflowRequests.push(req);
+    await sheetsRequestOverflow(currentUser, day);
     alert('Overflow request submitted. Waiting for manager approval.');
     renderAll();
     return;
@@ -1016,7 +1016,7 @@ function claimDay(day) {
 
   // Regular claim
   schedule[day].push(currentUser);
-  sheetsClaimDay(currentUser, day, false, false);
+  await sheetsClaimDay(currentUser, day, false, false);
   renderAll();
 }
 
@@ -1509,13 +1509,11 @@ async function syncLocalTrades() {
 // ═══════════════════════════════════════════════════════
 // UTILITIES
 // ═══════════════════════════════════════════════════════
-function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
-
-function colLetter(n) {
-  let r = '';
-  while (n > 0) { n--; r = String.fromCharCode(65 + n%26) + r; n = Math.floor(n/26); }
-  return r;
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 function setBadge(text, state) {
   const el = document.getElementById('apiBadge');
