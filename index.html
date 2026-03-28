@@ -422,22 +422,6 @@
     }
     .form-group select:focus { border-bottom-color: var(--black); }
 
-    .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .type-opt {
-      border: 1px solid var(--border);
-      border-bottom: 2px solid var(--border);
-      padding: 11px 12px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.12s;
-    }
-    .type-opt:hover { border-color: #aaa; background: var(--bg); }
-    .type-opt.selected { border-color: var(--black); border-bottom-color: var(--coral); background: var(--black); }
-    .type-opt.selected .type-opt-title { color: var(--white); }
-    .type-opt.selected .type-opt-desc  { color: rgba(255,255,255,0.55); }
-    .type-opt-title { font-size: 0.78rem; font-weight: 700; margin-bottom: 2px; color: var(--text); letter-spacing: 0.02em; }
-    .type-opt-desc  { font-size: 0.68rem; color: var(--muted); }
-
     .trade-preview {
       background: var(--bg);
       border: 1px solid var(--border);
@@ -568,33 +552,12 @@
     <div class="modal-body">
 
     <div class="form-group">
-      <label>Type</label>
-      <div class="type-toggle">
-        <div class="type-opt selected" id="typeOpen" onclick="setTradeType('open')">
-          <div class="type-opt-title">Open Post</div>
-          <div class="type-opt-desc">Anyone can claim</div>
-        </div>
-        <div class="type-opt" id="typeSwap" onclick="setTradeType('swap')">
-          <div class="type-opt-title">Direct Swap</div>
-          <div class="type-opt-desc">Specific person</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>Day</label>
+      <label>You're on <strong id="modalFromDay"></strong>. Which day do you want?</label>
       <select id="modalDay" onchange="updatePreview()">
-        <option value="">Select day...</option>
+        <option value="">Select a day…</option>
         <option value="tuesday">Tuesday</option>
         <option value="wednesday">Wednesday</option>
         <option value="thursday">Thursday</option>
-      </select>
-    </div>
-
-    <div class="form-group" id="targetGroup" style="display:none">
-      <label>Swap with</label>
-      <select id="modalTarget" onchange="updatePreview()">
-        <option value="">Select person...</option>
       </select>
     </div>
 
@@ -660,7 +623,6 @@ let overflow = { tuesday: [], wednesday: [], thursday: [] };
 let overflowRequests = [];
 let trades      = [];
 let currentUser = localStorage.getItem('orb_user') || '';
-let tradeType   = 'open';
 let gapiReady   = false;
 
 // ═══════════════════════════════════════════════════════
@@ -865,35 +827,24 @@ function renderTrades() {
 }
 
 function buildTradeCard(t) {
-  const isForMe  = t.type === 'swap' && t.targetPerson === currentUser;
   const isMyPost = t.postedBy === currentUser;
+  const myDay    = getUserDay(currentUser);
+  const canAccept = !isMyPost && currentUser && myDay === t.toDay;
 
-  let desc;
-  if (t.type === 'open') {
-    desc = `<strong>${esc(t.postedBy)}</strong> is available <strong>${esc(capitalize(t.day))}</strong> — open to any swap`;
-  } else {
-    desc = `<strong>${esc(t.postedBy)}</strong> wants to swap <strong>${esc(capitalize(t.day))}</strong> with <strong>${esc(t.targetPerson)}</strong>`;
-  }
+  const desc = `<strong>${esc(t.postedBy)}</strong> wants to move from <strong>${esc(capitalize(t.fromDay))}</strong> to <strong>${esc(capitalize(t.toDay))}</strong>`;
 
   let actions = '';
   if (isMyPost) {
     actions = `<button class="btn-ghost btn-sm" onclick="cancelTrade('${t.id}')">Cancel</button>`;
-  } else if (t.type === 'open' && currentUser) {
-    const myDay = getUserDay(currentUser);
-    if (myDay && myDay !== t.day) {
-      actions = `<button class="btn-success btn-sm" onclick="acceptTrade('${t.id}')">Accept — swap my ${capitalize(myDay)}</button>`;
-    }
-  } else if (isForMe) {
-    actions = `
-      <button class="btn-success btn-sm" onclick="acceptTrade('${t.id}')">Approve</button>
-      <button class="btn-danger  btn-sm" onclick="declineTrade('${t.id}')">Decline</button>`;
+  } else if (canAccept) {
+    actions = `<button class="btn-success btn-sm" onclick="acceptTrade('${t.id}')">Accept — swap my ${capitalize(myDay)}</button>`;
   }
 
   const card = document.createElement('div');
-  card.className = 'trade-row' + (isForMe ? ' for-me' : '');
+  card.className = 'trade-row' + (canAccept ? ' for-me' : '');
   card.innerHTML = `
     <div style="flex:1">
-      <div class="trade-type-tag ${t.type}">${t.type === 'open' ? 'Open Post' : 'Direct Swap'}</div>
+      <div class="trade-type-tag open">Day Swap</div>
       <div class="trade-desc">${desc}</div>
       <div class="trade-meta">Posted ${new Date(t.postedAt).toLocaleDateString()}</div>
     </div>
@@ -1003,6 +954,19 @@ async function claimDay(day) {
   renderAll();
 }
 
+async function moveDay(toDay) {
+  const fromDay = getUserDay(currentUser);
+  if (!fromDay) return;
+
+  // Remove from current day
+  schedule[fromDay] = schedule[fromDay].filter(n => n !== currentUser);
+  // Add to new day
+  schedule[toDay].push(currentUser);
+  saveLocalSchedule();
+  await scriptPost({ action: 'moveDay', name: currentUser, fromDay, toDay });
+  renderAll();
+}
+
 function getUserDay(user) {
   for (const d of ['tuesday','wednesday','thursday']) {
     if (schedule[d].includes(user)) return d;
@@ -1083,89 +1047,74 @@ function buildNameSelect() {
 // ═══════════════════════════════════════════════════════
 function openModal() {
   if (!currentUser) { alert('Select your name first.'); return; }
-
-  // Pre-select user's day if they have one
   const myDay = getUserDay(currentUser);
-  const daySelect = document.getElementById('modalDay');
-  if (myDay) {
-    daySelect.value = myDay;
-  } else {
-    daySelect.value = '';
-  }
+  if (!myDay) { alert('You need to claim a day before you can request a trade.'); return; }
 
-  // Populate target dropdown
-  const ts = document.getElementById('modalTarget');
-  ts.innerHTML = '<option value="">Select person...</option>';
-  ALL_NAMES.filter(n => n !== currentUser).forEach(n => {
-    const o = document.createElement('option'); o.value = n; o.textContent = n; ts.appendChild(o);
+  // Populate target day dropdown — only show days other than the user's current day
+  const sel = document.getElementById('modalDay');
+  sel.innerHTML = '<option value="">Which day do you want?</option>';
+  ['tuesday','wednesday','thursday'].filter(d => d !== myDay).forEach(d => {
+    const o = document.createElement('option');
+    o.value = d; o.textContent = capitalize(d);
+    sel.appendChild(o);
   });
 
-  setTradeType('open');
+  document.getElementById('modalFromDay').textContent = capitalize(myDay);
   updatePreview();
   document.getElementById('modalOverlay').classList.remove('hidden');
 }
 
 function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
 
-function setTradeType(type) {
-  tradeType = type;
-  document.getElementById('typeOpen').classList.toggle('selected', type === 'open');
-  document.getElementById('typeSwap').classList.toggle('selected', type === 'swap');
-  document.getElementById('targetGroup').style.display = type === 'swap' ? 'block' : 'none';
-  updatePreview();
-}
-
 function updatePreview() {
-  const prev = document.getElementById('tradePreview');
-  const selectedDay = document.getElementById('modalDay').value;
-  if (!selectedDay) { prev.textContent = 'Select a day to preview.'; return; }
+  const prev    = document.getElementById('tradePreview');
+  const toDay   = document.getElementById('modalDay').value;
+  const fromDay = getUserDay(currentUser);
+  if (!toDay || !fromDay) { prev.textContent = 'Select a day to preview.'; return; }
 
-  const myDay = getUserDay(currentUser);
-  if (!myDay) { prev.textContent = "You don't have a day assigned to trade."; return; }
+  const regularFull = schedule[toDay].length >= REGULAR_CAP;
+  const team        = TEAMS[currentUser];
+  const teamCount   = schedule[toDay].filter(n => TEAMS[n] === team).length;
+  const teamCapHit  = team && teamCount >= TEAM_CAPS[team];
 
-  if (tradeType === 'open') {
-    prev.textContent = `"${currentUser} is available ${capitalize(myDay)} — open to any swap"`;
-    return;
+  if (!regularFull && !teamCapHit) {
+    prev.textContent = `${capitalize(toDay)} has open spots — you'll move directly with no swap needed.`;
+  } else {
+    prev.textContent = `${capitalize(toDay)} is full. This will post a trade request: "${currentUser} (${capitalize(fromDay)}) wants ${capitalize(toDay)} — anyone want to swap?"`;
   }
-
-  const target = document.getElementById('modalTarget').value;
-  if (!target) { prev.textContent = 'Select a person to swap with.'; return; }
-  const theirDay = getUserDay(target);
-  if (!theirDay) { prev.textContent = `${target} doesn't have a day assigned.`; return; }
-  if (theirDay === myDay) { prev.textContent = `You and ${target} are both on ${capitalize(myDay)} — no swap needed!`; return; }
-
-  prev.textContent = `Swap your ${capitalize(myDay)} with ${target}'s ${capitalize(theirDay)}`;
 }
 
 async function submitTrade() {
-  const selectedDay = document.getElementById('modalDay').value;
-  const target = tradeType === 'swap' ? document.getElementById('modalTarget').value : '';
-  if (!selectedDay) { alert('Select a day.'); return; }
-  if (tradeType === 'swap' && !target) { alert('Select a person.'); return; }
+  const toDay   = document.getElementById('modalDay').value;
+  const fromDay = getUserDay(currentUser);
+  if (!toDay)   { alert('Select a target day.'); return; }
+  if (!fromDay) { alert('You need a day assigned first.'); return; }
 
-  const myDay = getUserDay(currentUser);
-  if (!myDay) { alert("You don't have a day assigned to trade."); return; }
+  const regularFull = schedule[toDay].length >= REGULAR_CAP;
+  const team        = TEAMS[currentUser];
+  const teamCount   = schedule[toDay].filter(n => TEAMS[n] === team).length;
+  const teamCapHit  = team && teamCount >= TEAM_CAPS[team];
 
-  if (tradeType === 'swap') {
-    const theirDay = getUserDay(target);
-    if (theirDay === myDay) { alert(`You and ${target} are both on ${capitalize(myDay)}.`); return; }
-  }
-
-  const trade = {
-    id:           crypto.randomUUID(),
-    postedBy:     currentUser,
-    day:          myDay,
-    type:         tradeType,
-    targetPerson: target,
-    status:       'pending',
-    postedAt:     new Date().toISOString(),
-    acceptedBy:   '',
-    acceptedAt:   '',
-  };
-
-  trades.push(trade);
   closeModal();
 
+  if (!regularFull && !teamCapHit) {
+    // Direct move — no trade needed
+    await moveDay(toDay);
+    return;
+  }
+
+  // Post trade to board
+  const trade = {
+    id:          crypto.randomUUID(),
+    postedBy:    currentUser,
+    fromDay,
+    toDay,
+    status:      'pending',
+    postedAt:    new Date().toISOString(),
+    acceptedBy:  '',
+    acceptedAt:  '',
+  };
+  trades.push(trade);
   saveLocalTrades();
   await sheetsAppendTrade(trade);
   renderTrades();
@@ -1173,24 +1122,26 @@ async function submitTrade() {
 
 async function acceptTrade(id) {
   if (!currentUser) { alert('Select your name first.'); return; }
-  const t = trades.find(x => x.id === id);
+  const t        = trades.find(x => x.id === id);
   if (!t) return;
 
-  const posterDay   = getUserDay(t.postedBy);
-  const accepterDay = getUserDay(currentUser);
-  if (!posterDay || !accepterDay || posterDay === accepterDay) {
-    alert('Swap not possible — you are on the same day.'); return;
-  }
+  const myDay = getUserDay(currentUser);
+  if (!myDay) { alert('You need a day assigned to accept a trade.'); return; }
+  if (myDay !== t.toDay) { alert(`You need to be on ${capitalize(t.toDay)} to accept this trade.`); return; }
 
-  // Swap in local schedule
-  swapDays(t.postedBy, currentUser);
+  // Swap days
+  schedule[t.fromDay] = schedule[t.fromDay].filter(n => n !== t.postedBy);
+  schedule[t.toDay]   = schedule[t.toDay].filter(n => n !== currentUser);
+  schedule[t.toDay].push(t.postedBy);
+  schedule[t.fromDay].push(currentUser);
+  saveLocalSchedule();
 
   t.status     = 'accepted';
   t.acceptedBy = currentUser;
   t.acceptedAt = new Date().toISOString();
-
   saveLocalTrades();
-  await sheetsSwapSchedule(t.postedBy, posterDay, currentUser, accepterDay);
+
+  await scriptPost({ action: 'swapDays', person1: t.postedBy, day1: t.toDay, person2: currentUser, day2: t.fromDay });
   await sheetsUpdateTradeStatus(t);
   renderAll();
 }
@@ -1361,18 +1312,23 @@ async function sheetsLoadTrades() {
   try {
     const res  = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: CONFIG.SHEET_ID,
-      range: `${CONFIG.TRADES_TAB}!A:I`,
+      range: `${CONFIG.TRADES_TAB}!A:H`,
     });
     const rows = (res.result.values || []).slice(1);
     const sheetTrades = rows.map(r => ({
-      id:           r[0]||'', postedBy:r[1]||'', day:r[2]||'',
-      type:         r[3]||'open', targetPerson:r[4]||'', status:r[5]||'pending',
-      postedAt:     r[6]||'', acceptedBy:r[7]||'', acceptedAt:r[8]||'',
+      id:          r[0]||'',
+      postedBy:    r[1]||'',
+      fromDay:     (r[2]||'').toLowerCase(),
+      toDay:       (r[3]||'').toLowerCase(),
+      status:      r[4]||'pending',
+      postedAt:    r[5]||'',
+      acceptedBy:  r[6]||'',
+      acceptedAt:  r[7]||'',
     })).filter(t => t.id);
     if (sheetTrades.length) trades = sheetTrades;
     renderTrades();
   } catch(e) {
-    console.warn('Trades tab not found or inaccessible — using local data', e);
+    console.warn('Trades tab not found — using local data', e);
   }
 }
 
@@ -1380,8 +1336,8 @@ async function sheetsLoadTrades() {
 // SHEETS — WRITE TRADE
 // ═══════════════════════════════════════════════════════
 async function sheetsAppendTrade(t) {
-  await scriptPost({ action: 'postTrade', id: t.id, postedBy: t.postedBy, day: t.day,
-    type: t.type, targetPerson: t.targetPerson, status: t.status, postedAt: t.postedAt });
+  await scriptPost({ action: 'postTrade', id: t.id, postedBy: t.postedBy,
+    fromDay: t.fromDay, toDay: t.toDay, status: t.status, postedAt: t.postedAt });
 }
 
 async function sheetsUpdateTradeStatus(t) {
