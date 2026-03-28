@@ -530,12 +530,6 @@
     <span><strong>Setup required:</strong> Fill in your <code>API_KEY</code>, <code>CLIENT_ID</code>, and <code>SHEET_ID</code> in the CONFIG block at the bottom of this file.</span>
   </div>
 
-  <!-- Sign-in banner -->
-  <div id="signInBanner" class="banner info hidden">
-    <span>Sign in with Google to claim a day or post trades.</span>
-    <button class="btn-primary btn-sm" onclick="signIn()">Sign in</button>
-  </div>
-
   <!-- 3-column day grid -->
   <div class="day-grid" id="dayGrid">
     <!-- rendered by renderDayGrid() -->
@@ -622,15 +616,14 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════
 const CONFIG = {
-  API_KEY:   'AIzaSyAZNVz0WM4HwfgXsz-_cNbAi1bTE6lBhXY',
-  CLIENT_ID: '611063623994-sohli3bokfj6ng8ldg7m546950v40g4a.apps.googleusercontent.com',
-  SHEET_ID:  '1i6szQi_L9CCDQqjVxwG1EaZ3bL2QLJUihKbMGi3NVA4',
+  API_KEY:      'AIzaSyAZNVz0WM4HwfgXsz-_cNbAi1bTE6lBhXY',
+  CLIENT_ID:    '611063623994-sohli3bokfj6ng8ldg7m546950v40g4a.apps.googleusercontent.com',
+  SHEET_ID:     '1i6szQi_L9CCDQqjVxwG1EaZ3bL2QLJUihKbMGi3NVA4',
   SCHEDULE_TAB: 'Schedule',
   TRADES_TAB:   'Trades',
   OVERFLOW_TAB: 'Overflow',
+  SCRIPT_URL:   'https://script.google.com/macros/s/AKfycbzLOo2IyExrqEhdJmMrlvX0Qctraw6hCGwQX_zw0BuFETKsSrobbEKXrCwV-p58REKR/exec',
 };
-
-const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
 // ═══════════════════════════════════════════════════════
 // TEAM CONFIG
@@ -668,9 +661,7 @@ let overflowRequests = [];
 let trades      = [];
 let currentUser = localStorage.getItem('orb_user') || '';
 let tradeType   = 'open';
-let isSignedIn  = false;
 let gapiReady   = false;
-let tokenClient = null;
 
 // ═══════════════════════════════════════════════════════
 // BOOT
@@ -969,7 +960,6 @@ async function claimDay(day) {
     if (overflowFull) { alert('Overflow is full for that day.'); return; }
     overflow[day].push(currentUser);
     saveLocalSchedule();
-    if (!isSignedIn) document.getElementById('signInBanner').classList.remove('hidden');
     await sheetsClaimDay(currentUser, day, true, true);
     renderAll();
     return;
@@ -1000,7 +990,6 @@ async function claimDay(day) {
     };
     overflowRequests.push(req);
     saveLocalSchedule();
-    if (!isSignedIn) document.getElementById('signInBanner').classList.remove('hidden');
     await sheetsRequestOverflow(currentUser, day);
     alert('Overflow request submitted. Waiting for manager approval.');
     renderAll();
@@ -1010,7 +999,6 @@ async function claimDay(day) {
   // Regular claim
   schedule[day].push(currentUser);
   saveLocalSchedule();
-  if (!isSignedIn) document.getElementById('signInBanner').classList.remove('hidden');
   await sheetsClaimDay(currentUser, day, false, false);
   renderAll();
 }
@@ -1178,12 +1166,8 @@ async function submitTrade() {
   trades.push(trade);
   closeModal();
 
-  if (isSignedIn) {
-    await sheetsAppendTrade(trade);
-  } else {
-    saveLocalTrades();
-    document.getElementById('signInBanner').classList.remove('hidden');
-  }
+  saveLocalTrades();
+  await sheetsAppendTrade(trade);
   renderTrades();
 }
 
@@ -1205,13 +1189,9 @@ async function acceptTrade(id) {
   t.acceptedBy = currentUser;
   t.acceptedAt = new Date().toISOString();
 
-  if (isSignedIn) {
-    await sheetsSwapSchedule(t.postedBy, currentUser);
-    await sheetsUpdateTradeStatus(t);
-  } else {
-    saveLocalTrades();
-    document.getElementById('signInBanner').classList.remove('hidden');
-  }
+  saveLocalTrades();
+  await sheetsSwapSchedule(t.postedBy, posterDay, currentUser, accepterDay);
+  await sheetsUpdateTradeStatus(t);
   renderAll();
 }
 
@@ -1219,7 +1199,8 @@ async function declineTrade(id) {
   const t = trades.find(x => x.id === id);
   if (!t) return;
   t.status = 'cancelled';
-  if (isSignedIn) { await sheetsUpdateTradeStatus(t); } else { saveLocalTrades(); }
+  saveLocalTrades();
+  await sheetsUpdateTradeStatus(t);
   renderTrades();
 }
 
@@ -1227,7 +1208,8 @@ async function cancelTrade(id) {
   const t = trades.find(x => x.id === id);
   if (!t) return;
   t.status = 'cancelled';
-  if (isSignedIn) { await sheetsUpdateTradeStatus(t); } else { saveLocalTrades(); }
+  saveLocalTrades();
+  await sheetsUpdateTradeStatus(t);
   renderTrades();
 }
 
@@ -1276,26 +1258,6 @@ function gapiLoaded() {
       setBadge('API Error', 'error');
     }
   });
-}
-
-function gisLoaded() {
-  if (CONFIG.CLIENT_ID === 'YOUR_CLIENT_ID_HERE') return;
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CONFIG.CLIENT_ID,
-    scope: SCOPES,
-    callback: async resp => {
-      if (resp.error) return;
-      isSignedIn = true;
-      document.getElementById('signInBanner').classList.add('hidden');
-      await syncLocalTrades();
-      await syncLocalSchedule();
-    },
-  });
-}
-
-function signIn() {
-  if (!tokenClient) { alert('Google API not configured.'); return; }
-  tokenClient.requestAccessToken({ prompt: '' });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1362,66 +1324,34 @@ async function sheetsLoadOverflow() {
 // SHEETS — CLAIM DAY
 // ═══════════════════════════════════════════════════════
 async function sheetsClaimDay(name, day, isOverflow, autoApprove) {
-  if (!gapiReady) return;
   const team = TEAMS[name] || 'special';
-  try {
-    if (!isOverflow) {
-      await gapi.client.sheets.spreadsheets.values.append({
-        spreadsheetId: CONFIG.SHEET_ID,
-        range: `${CONFIG.SCHEDULE_TAB}!A:C`,
-        valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS',
-        resource: { values: [[name, capitalize(day), team]] },
-      });
-    } else {
-      const status = autoApprove ? 'approved' : 'pending';
-      const id = crypto.randomUUID();
-      await gapi.client.sheets.spreadsheets.values.append({
-        spreadsheetId: CONFIG.SHEET_ID,
-        range: `${CONFIG.OVERFLOW_TAB}!A:G`,
-        valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS',
-        resource: { values: [[id, name, capitalize(day), new Date().toISOString(), status, autoApprove ? name : '', autoApprove ? new Date().toISOString() : '']] },
-      });
-    }
-  } catch(e) { console.error('Claim day failed', e); }
+  if (!isOverflow) {
+    await scriptPost({ action: 'claimDay', name, day, team });
+  } else {
+    const id     = crypto.randomUUID();
+    const status = autoApprove ? 'approved' : 'pending';
+    await scriptPost({ action: 'requestOverflow', id, name, day,
+      requestedAt: new Date().toISOString(), status,
+      approvedBy: autoApprove ? name : '', approvedAt: autoApprove ? new Date().toISOString() : '' });
+  }
 }
 
 // ═══════════════════════════════════════════════════════
 // SHEETS — REQUEST OVERFLOW
 // ═══════════════════════════════════════════════════════
 async function sheetsRequestOverflow(name, day) {
-  if (!gapiReady) return;
   const req = overflowRequests.find(r => r.name === name && r.day === day && r.status === 'pending');
   if (!req) return;
-  try {
-    await gapi.client.sheets.spreadsheets.values.append({
-      spreadsheetId: CONFIG.SHEET_ID,
-      range: `${CONFIG.OVERFLOW_TAB}!A:G`,
-      valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS',
-      resource: { values: [[req.id, req.name, capitalize(req.day), req.requestedAt, req.status, req.approvedBy, req.approvedAt]] },
-    });
-  } catch(e) { console.error('Request overflow failed', e); }
+  await scriptPost({ action: 'requestOverflow', id: req.id, name: req.name, day: req.day,
+    requestedAt: req.requestedAt, status: req.status, approvedBy: req.approvedBy, approvedAt: req.approvedAt });
 }
 
 // ═══════════════════════════════════════════════════════
 // SHEETS — APPROVE / DENY OVERFLOW
 // ═══════════════════════════════════════════════════════
 async function sheetsApproveOverflow(req) {
-  if (!gapiReady) return;
-  try {
-    const res = await gapi.client.sheets.spreadsheets.values.get({
-      spreadsheetId: CONFIG.SHEET_ID, range: `${CONFIG.OVERFLOW_TAB}!A:A`,
-    });
-    const rowNum = (res.result.values||[]).findIndex(r => r[0] === req.id);
-    if (rowNum < 0) return;
-    const r = rowNum + 1;
-    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-      spreadsheetId: CONFIG.SHEET_ID,
-      resource: { valueInputOption:'RAW', data:[
-        { range:`${CONFIG.OVERFLOW_TAB}!E${r}`, values:[[req.status]] },
-        { range:`${CONFIG.OVERFLOW_TAB}!F${r}:G${r}`, values:[[req.approvedBy, req.approvedAt]] },
-      ]},
-    });
-  } catch(e) { console.error('Approve overflow failed', e); }
+  await scriptPost({ action: 'approveOverflow', id: req.id, status: req.status,
+    approvedBy: req.approvedBy, approvedAt: req.approvedAt });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1450,121 +1380,38 @@ async function sheetsLoadTrades() {
 // SHEETS — WRITE TRADE
 // ═══════════════════════════════════════════════════════
 async function sheetsAppendTrade(t) {
-  if (!gapiReady) return;
-  try {
-    await gapi.client.sheets.spreadsheets.values.append({
-      spreadsheetId: CONFIG.SHEET_ID,
-      range: `${CONFIG.TRADES_TAB}!A:I`,
-      valueInputOption: 'RAW',
-      insertDataOption: 'INSERT_ROWS',
-      resource: { values:[[t.id,t.postedBy,t.day,t.type,t.targetPerson,t.status,t.postedAt,t.acceptedBy,t.acceptedAt]] },
-    });
-  } catch(e) { console.error('Append trade failed', e); saveLocalTrades(); }
+  await scriptPost({ action: 'postTrade', id: t.id, postedBy: t.postedBy, day: t.day,
+    type: t.type, targetPerson: t.targetPerson, status: t.status, postedAt: t.postedAt });
 }
 
 async function sheetsUpdateTradeStatus(t) {
-  if (!gapiReady) { saveLocalTrades(); return; }
-  try {
-    const res = await gapi.client.sheets.spreadsheets.values.get({
-      spreadsheetId: CONFIG.SHEET_ID, range: `${CONFIG.TRADES_TAB}!A:A`,
-    });
-    const rowNum = (res.result.values||[]).findIndex(r => r[0] === t.id);
-    if (rowNum < 0) return;
-    const r = rowNum + 1;
-    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-      spreadsheetId: CONFIG.SHEET_ID,
-      resource: { valueInputOption:'RAW', data:[
-        { range:`${CONFIG.TRADES_TAB}!F${r}`, values:[[t.status]] },
-        { range:`${CONFIG.TRADES_TAB}!H${r}:I${r}`, values:[[t.acceptedBy, t.acceptedAt]] },
-      ]},
-    });
-  } catch(e) { console.error('Update trade status failed', e); saveLocalTrades(); }
+  await scriptPost({ action: 'updateTrade', id: t.id, status: t.status,
+    postedAt: t.postedAt, acceptedBy: t.acceptedBy, acceptedAt: t.acceptedAt });
 }
 
 // ═══════════════════════════════════════════════════════
 // SHEETS — SWAP SCHEDULE
 // ═══════════════════════════════════════════════════════
-async function sheetsSwapSchedule(person1, person2) {
-  if (!gapiReady) return;
-  try {
-    const res = await gapi.client.sheets.spreadsheets.values.get({
-      spreadsheetId: CONFIG.SHEET_ID, range: `${CONFIG.SCHEDULE_TAB}!A:B`,
-    });
-    const rows = res.result.values || [];
-    const updates = [];
-    for (let i = 0; i < rows.length; i++) {
-      const name = (rows[i][0]||'').trim();
-      const day  = (rows[i][1]||'').trim();
-      if (name === person1) {
-        // person1 now has person2's old day (already swapped in local state)
-        const newDay = getUserDay(person1);
-        if (newDay) updates.push({ range:`${CONFIG.SCHEDULE_TAB}!B${i+1}`, values:[[capitalize(newDay)]] });
-      } else if (name === person2) {
-        const newDay = getUserDay(person2);
-        if (newDay) updates.push({ range:`${CONFIG.SCHEDULE_TAB}!B${i+1}`, values:[[capitalize(newDay)]] });
-      }
-    }
-    if (updates.length) {
-      await gapi.client.sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId: CONFIG.SHEET_ID,
-        resource: { valueInputOption:'RAW', data: updates },
-      });
-    }
-  } catch(e) { console.error('Schedule swap failed', e); }
-}
-
-async function syncLocalTrades() {
-  const local = JSON.parse(localStorage.getItem('orb_trades')||'[]');
-  for (const t of local) {
-    if (!trades.find(x => x.id === t.id)) {
-      trades.push(t);
-      await sheetsAppendTrade(t);
-    }
-  }
-  localStorage.removeItem('orb_trades');
-  renderTrades();
-}
-
-async function syncLocalSchedule() {
-  const localSched = JSON.parse(localStorage.getItem('orb_schedule') || 'null');
-  const localOv    = JSON.parse(localStorage.getItem('orb_overflow') || 'null');
-  const localReqs  = JSON.parse(localStorage.getItem('orb_overflow_reqs') || '[]');
-
-  if (localSched) {
-    for (const day of ['tuesday','wednesday','thursday']) {
-      for (const name of (localSched[day] || [])) {
-        if (!schedule[day].includes(name)) {
-          schedule[day].push(name);
-          await sheetsClaimDay(name, day, false, false);
-        }
-      }
-    }
-  }
-  if (localOv) {
-    for (const day of ['tuesday','wednesday','thursday']) {
-      for (const name of (localOv[day] || [])) {
-        if (!overflow[day].includes(name)) {
-          overflow[day].push(name);
-          await sheetsClaimDay(name, day, true, true);
-        }
-      }
-    }
-  }
-  for (const req of localReqs) {
-    if (!overflowRequests.find(r => r.id === req.id)) {
-      overflowRequests.push(req);
-      await sheetsRequestOverflow(req.name, req.day);
-    }
-  }
-  localStorage.removeItem('orb_schedule');
-  localStorage.removeItem('orb_overflow');
-  localStorage.removeItem('orb_overflow_reqs');
-  renderAll();
+async function sheetsSwapSchedule(person1, day1, person2, day2) {
+  await scriptPost({ action: 'swapDays', person1, day1, person2, day2 });
 }
 
 // ═══════════════════════════════════════════════════════
 // UTILITIES
 // ═══════════════════════════════════════════════════════
+async function scriptPost(data) {
+  try {
+    await fetch(CONFIG.SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  } catch(e) {
+    console.warn('Script post failed', e);
+  }
+}
+
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -1582,6 +1429,5 @@ boot();
 </script>
 
 <script src="https://apis.google.com/js/api.js"            onload="gapiLoaded()" defer></script>
-<script src="https://accounts.google.com/gsi/client"       onload="gisLoaded()"  defer></script>
 </body>
 </html>
