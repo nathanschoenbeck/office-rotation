@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Karbon | Office Rotation</title>
+  <title>Karbon | Office Schedule</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -28,11 +28,6 @@
       --muted:   #6B6B6B;
       --radius:  4px;
       --shadow:  0 1px 3px rgba(0,0,0,0.08);
-
-      /* Wabash = Cobalt (energized intelligence) */
-      /* Monroe = Gold warmth */
-      --wabash: var(--cobalt);
-      --monroe: #A07840;   /* darker Gold for text legibility */
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -110,13 +105,12 @@
       padding: 0 28px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       height: 44px;
       position: sticky;
       top: 52px;
       z-index: 99;
-      flex-wrap: wrap;
-      gap: 0;
+      gap: 18px;
     }
 
     .week-controls { display: flex; align-items: center; gap: 6px; }
@@ -248,8 +242,6 @@
       align-items: center;
       gap: 10px;
     }
-    .loc-title.wabash { color: var(--cobalt); }
-    .loc-title.monroe { color: var(--monroe); }
 
     .count-pill {
       font-size: 0.62rem;
@@ -258,8 +250,6 @@
       border-radius: 2px;
       letter-spacing: 0.02em;
     }
-    .loc-title.wabash .count-pill { background: rgba(37,34,193,0.08); color: var(--cobalt); }
-    .loc-title.monroe .count-pill { background: rgba(221,184,139,0.25); color: var(--monroe); }
 
     .name-list { list-style: none; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 5px; }
 
@@ -317,14 +307,9 @@
       border-top: 3px solid var(--border);
       padding: 10px 12px;
     }
-    .sched-item.wabash-w { border-top-color: var(--cobalt); }
-    .sched-item.monroe-w { border-top-color: var(--gold); }
-    .sched-item.now      { background: rgba(221,184,139,0.15); border-top-color: var(--gold); border-color: rgba(221,184,139,0.5); }
 
     .sched-week  { font-size: 0.65rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; letter-spacing: 0.04em; text-transform: uppercase; }
     .sched-loc   { font-size: 0.82rem; font-weight: 700; }
-    .sched-loc.wabash { color: var(--cobalt); }
-    .sched-loc.monroe { color: var(--monroe); }
     .sched-now-tag { font-size: 0.6rem; color: #7a5a20; margin-top: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 
     .empty-msg { color: var(--muted); font-size: 0.8rem; padding: 28px; text-align: center; font-weight: 500; }
@@ -479,6 +464,50 @@
       border-top: 1px solid var(--border);
       background: var(--bg);
     }
+
+    /* ── Day Grid (new) ── */
+    .day-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 700px) { .day-grid { grid-template-columns: 1fr; } }
+
+    .capacity-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      margin: 8px 0 4px;
+      overflow: hidden;
+    }
+    .capacity-fill {
+      height: 100%;
+      background: var(--cobalt);
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+    .capacity-fill.full { background: var(--coral); }
+    .team-caps {
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+      line-height: 1.6;
+    }
+    .overflow-section {
+      border-top: 1px solid var(--border);
+      padding: 10px 16px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .claim-area {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
@@ -492,7 +521,7 @@
     </svg>
     <span class="k-wordmark">Karbon</span>
     <div class="header-divider"></div>
-    <span class="header-page">Office Rotation</span>
+    <span class="header-page">Office Schedule</span>
   </div>
   <div class="header-right">
     <span id="apiBadge" class="api-badge loading">Loading…</span>
@@ -502,18 +531,9 @@
   </div>
 </header>
 
-<!-- Dark sub-nav: week controls + location tabs -->
-<div class="sub-nav">
-  <div class="week-controls">
-    <button class="btn-nav" id="prevBtn" onclick="changeWeek(-1)">&#9664;</button>
-    <span id="weekLabel">—</span>
-    <button class="btn-nav" id="nextBtn" onclick="changeWeek(1)">&#9654;</button>
-  </div>
-  <div class="loc-filters">
-    <button class="btn-filter active" onclick="setFilter('both',this)">Both Offices</button>
-    <button class="btn-filter" onclick="setFilter('wabash',this)">Wabash</button>
-    <button class="btn-filter" onclick="setFilter('monroe',this)">Monroe</button>
-  </div>
+<!-- Simplified sub-nav: no week controls, no location filters -->
+<div class="sub-nav" style="justify-content: flex-start; gap: 18px;">
+  <span style="font-size:0.72rem; font-weight:600; color:rgba(255,255,255,0.55); letter-spacing:0.04em; text-transform:uppercase;">Office Days</span>
 </div>
 
 <main>
@@ -524,32 +544,21 @@
 
   <!-- Sign-in banner -->
   <div id="signInBanner" class="banner info hidden">
-    <span>Sign in with Google to post or approve trades.</span>
+    <span>Sign in with Google to claim a day or post trades.</span>
     <button class="btn-primary btn-sm" onclick="signIn()">Sign in</button>
   </div>
 
-  <!-- Roster -->
-  <div class="roster">
-    <div class="loc-card" id="wabashCard">
-      <div class="loc-card-header">
-        <div class="loc-title wabash">Wabash <span class="count-pill" id="wabashCount">0</span></div>
-      </div>
-      <ul class="name-list" id="wabashList"></ul>
-    </div>
-    <div class="loc-card" id="monroeCard">
-      <div class="loc-card-header">
-        <div class="loc-title monroe">Monroe <span class="count-pill" id="monroeCount">0</span></div>
-      </div>
-      <ul class="name-list" id="monroeList"></ul>
-    </div>
+  <!-- 3-column day grid -->
+  <div class="day-grid" id="dayGrid">
+    <!-- rendered by renderDayGrid() -->
   </div>
 
-  <!-- Personal schedule -->
-  <div class="card">
+  <!-- Your Day card -->
+  <div class="card" id="yourDayCard">
     <div class="card-header">
-      <span class="card-title">Your Schedule</span>
+      <span class="card-title">Your Day</span>
     </div>
-    <div class="card-body" id="personalSchedule"></div>
+    <div class="card-body" id="yourDayBody"></div>
   </div>
 
   <!-- Trade board -->
@@ -559,6 +568,14 @@
       <button class="btn-primary" onclick="openModal()">+ Post Trade</button>
     </div>
     <div class="trade-list" id="tradeList"></div>
+  </div>
+
+  <!-- Manager overflow panel (hidden unless currentUser === MANAGER_NAME) -->
+  <div class="card hidden" id="managerPanel">
+    <div class="card-header">
+      <span class="card-title">Overflow Requests</span>
+    </div>
+    <div id="overflowRequestList"></div>
   </div>
 </main>
 
@@ -583,20 +600,25 @@
     </div>
 
     <div class="form-group">
-      <label>Week</label>
-      <select id="modalWeek" onchange="updatePreview()"></select>
+      <label>Day</label>
+      <select id="modalDay" onchange="updatePreview()">
+        <option value="">Select day...</option>
+        <option value="tuesday">Tuesday</option>
+        <option value="wednesday">Wednesday</option>
+        <option value="thursday">Thursday</option>
+      </select>
     </div>
 
     <div class="form-group" id="targetGroup" style="display:none">
       <label>Swap with</label>
       <select id="modalTarget" onchange="updatePreview()">
-        <option value="">Select person…</option>
+        <option value="">Select person...</option>
       </select>
     </div>
 
     <div class="form-group">
       <label>Preview</label>
-      <div class="trade-preview" id="tradePreview">Select a week to preview.</div>
+      <div class="trade-preview" id="tradePreview">Select a day to preview.</div>
     </div>
 
     </div><!-- /modal-body -->
@@ -609,7 +631,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════
-// CONFIG — replace these before sharing with your team
+// CONFIG
 // ═══════════════════════════════════════════════════════
 const CONFIG = {
   API_KEY:   'AIzaSyAZNVz0WM4HwfgXsz-_cNbAi1bTE6lBhXY',
@@ -617,50 +639,45 @@ const CONFIG = {
   SHEET_ID:  '1i6szQi_L9CCDQqjVxwG1EaZ3bL2QLJUihKbMGi3NVA4',
   SCHEDULE_TAB: 'Schedule',
   TRADES_TAB:   'Trades',
+  OVERFLOW_TAB: 'Overflow',
 };
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
 // ═══════════════════════════════════════════════════════
-// EMBEDDED SCHEDULE — used as fallback if Sheets is unavailable
+// TEAM CONFIG
 // ═══════════════════════════════════════════════════════
-const BASE_SCHEDULE = [
-  { weekStart:'2026-03-30', label:'Mar 30 – Apr 3',
-    wabash:['Dom','Juan','KC','Jack','Gerard','Sierra','Rachel','Will','Kate G','Beck','Chase','Steven'],
-    monroe:['Jared','Nate','Michael','Shiv','Paolo','Joe','Luke','Kate S','Alycia','Ben'] },
-  { weekStart:'2026-04-06', label:'Apr 6 – Apr 10',
-    wabash:['Jared','KC','Nate','Joe','Luke','Michael','Shiv','Kate S','Alycia','Ben','Paolo','Will'],
-    monroe:['Dom','Jack','Gerard','Rachel','Beck','Juan','Sierra','Kate G','Chase','Steven'] },
-  { weekStart:'2026-04-13', label:'Apr 13 – Apr 17',
-    wabash:['Dom','Jared','Juan','Nate','Joe','Gerard','Sierra','Kate S','Kate G','Alycia','Chase','Paolo'],
-    monroe:['KC','Luke','Michael','Will','Ben','Jack','Rachel','Shiv','Beck','Steven'] },
-  { weekStart:'2026-04-20', label:'Apr 20 – Apr 24',
-    wabash:['Juan','Jack','Luke','Michael','Rachel','Shiv','Will','Kate G','Beck','Ben','Chase','Steven'],
-    monroe:['Dom','Nate','Joe','Sierra','Alycia','Jared','KC','Gerard','Kate S','Paolo'] },
-  { weekStart:'2026-04-27', label:'Apr 27 – May 1',
-    wabash:['Dom','KC','Jack','Joe','Gerard','Rachel','Shiv','Kate S','Alycia','Ben','Paolo','Steven'],
-    monroe:['Juan','Luke','Sierra','Will','Chase','Jared','Nate','Michael','Kate G','Beck'] },
-  { weekStart:'2026-05-04', label:'May 4 – May 8',
-    wabash:['Jared','Juan','Nate','Luke','Sierra','Will','Kate S','Kate G','Beck','Ben','Chase','Paolo'],
-    monroe:['Dom','Joe','Michael','Shiv','Steven','KC','Jack','Gerard','Rachel','Alycia'] },
-  { weekStart:'2026-05-11', label:'May 11 – May 15',
-    wabash:['Dom','Jared','KC','Nate','Michael','Rachel','Will','Alycia','Beck','Ben','Paolo','Steven'],
-    monroe:['Juan','Jack','Luke','Shiv','Chase','Joe','Gerard','Sierra','Kate S','Kate G'] },
-  { weekStart:'2026-05-18', label:'May 18 – May 22',
-    wabash:['Juan','KC','Joe','Luke','Gerard','Sierra','Shiv','Kate S','Kate G','Alycia','Chase','Steven'],
-    monroe:['Nate','Jack','Rachel','Will','Paolo','Dom','Jared','Michael','Beck','Ben'] },
-  { weekStart:'2026-05-25', label:'May 25 – May 29',
-    wabash:['Dom','Jared','Jack','Joe','Luke','Gerard','Michael','Rachel','Will','Kate G','Beck','Ben'],
-    monroe:['KC','Sierra','Shiv','Alycia','Steven','Juan','Nate','Kate S','Chase','Paolo'] },
-];
+const TEAMS = {
+  // Nathan's team
+  'Dom':'nathan','Jack':'nathan','Jared':'nathan','Joe':'nathan',
+  'Juan':'nathan','KC':'nathan','Luke':'nathan','Nate':'nathan',
+  // Geoff's team
+  'Alycia':'geoff','Beck':'geoff','Ben':'geoff','Chase':'geoff',
+  'Kate G':'geoff','Kate S':'geoff','Paolo':'geoff','Steve':'geoff',
+  // Natalie's team
+  'Gerard':'natalie','Michael Z':'natalie','Rachel F':'natalie','Sierra R':'natalie',
+  'Will S':'natalie','Shiv':'natalie',
+};
+const TEAM_CAPS    = { nathan: 4, geoff: 2, natalie: 2 };
+const REGULAR_CAP  = 8;
+const OVERFLOW_CAP = 2;
+const MANAGER_NAME = 'Nathan';
+
+// Shayaan is not on any team; can claim overflow without manager approval
+const SPECIAL_USERS = {
+  'Shayaan': { overflowAutoApprove: true },
+};
+
+// All selectable names (team members + special users)
+const ALL_NAMES = [...Object.keys(TEAMS), ...Object.keys(SPECIAL_USERS)].sort();
 
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
-let schedule    = BASE_SCHEDULE.map(w => ({ ...w, wabash:[...w.wabash], monroe:[...w.monroe] }));
+let schedule = { tuesday: [], wednesday: [], thursday: [] };
+let overflow = { tuesday: [], wednesday: [], thursday: [] };
+let overflowRequests = [];
 let trades      = [];
-let weekIdx     = 0;
-let locFilter   = 'both';
 let currentUser = localStorage.getItem('orb_user') || '';
 let tradeType   = 'open';
 let isSignedIn  = false;
@@ -672,112 +689,193 @@ let tokenClient = null;
 // ═══════════════════════════════════════════════════════
 function boot() {
   const configured = CONFIG.API_KEY !== 'YOUR_API_KEY_HERE';
-
   if (!configured) {
     document.getElementById('configBanner').classList.remove('hidden');
     setBadge('Not configured', 'offline');
   }
-
   loadLocalTrades();
-  weekIdx = findCurrentWeekIndex();
   buildNameSelect();
   renderAll();
-
-  if (configured) {
-    setBadge('Connecting…', 'loading');
-  }
-}
-
-// ═══════════════════════════════════════════════════════
-// WEEK HELPERS
-// ═══════════════════════════════════════════════════════
-function findCurrentWeekIndex() {
-  const today = new Date(); today.setHours(0,0,0,0);
-  for (let i = 0; i < schedule.length; i++) {
-    const start = new Date(schedule[i].weekStart);
-    const end   = new Date(start); end.setDate(end.getDate() + 4);
-    if (today >= start && today <= end) return i;
-  }
-  const first = new Date(schedule[0].weekStart);
-  return today < first ? 0 : schedule.length - 1;
-}
-
-function isCurrentWeek(i) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const start = new Date(schedule[i].weekStart);
-  const end   = new Date(start); end.setDate(end.getDate() + 4);
-  return today >= start && today <= end;
-}
-
-function changeWeek(dir) {
-  weekIdx = Math.max(0, Math.min(schedule.length - 1, weekIdx + dir));
-  renderAll();
+  if (configured) setBadge('Connecting...', 'loading');
 }
 
 // ═══════════════════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════════════════
 function renderAll() {
-  renderWeekNav();
-  renderRoster();
-  renderPersonal();
+  renderDayGrid();
+  renderYourDay();
   renderTrades();
+  renderOverflowRequests();
 }
 
-function renderWeekNav() {
-  const w   = schedule[weekIdx];
-  const cur = isCurrentWeek(weekIdx);
-  const lbl = document.getElementById('weekLabel');
-  lbl.innerHTML = w.label + (cur ? '<span class="current-tag">This Week</span>' : '');
-  document.getElementById('prevBtn').disabled = weekIdx === 0;
-  document.getElementById('nextBtn').disabled = weekIdx === schedule.length - 1;
+function renderDayGrid() {
+  const grid = document.getElementById('dayGrid');
+  grid.innerHTML = '';
+  const DAYS = ['tuesday', 'wednesday', 'thursday'];
+  DAYS.forEach(day => {
+    const card = buildDayCard(day);
+    grid.appendChild(card);
+  });
 }
 
-function renderRoster() {
-  const w = schedule[weekIdx];
-  document.getElementById('wabashCard').classList.toggle('hidden', locFilter === 'monroe');
-  document.getElementById('monroeCard').classList.toggle('hidden', locFilter === 'wabash');
-  fillList('wabashList', w.wabash);
-  fillList('monroeList', w.monroe);
-  document.getElementById('wabashCount').textContent = w.wabash.length;
-  document.getElementById('monroeCount').textContent = w.monroe.length;
-}
+function buildDayCard(day) {
+  const names = schedule[day] || [];
+  const overflowNames = overflow[day] || [];
+  const count = names.length;
+  const pct = Math.min(100, Math.round((count / REGULAR_CAP) * 100));
+  const isFull = count >= REGULAR_CAP;
 
-function fillList(id, names) {
-  const ul = document.getElementById(id);
-  ul.innerHTML = '';
+  // Team counts
+  const teamCounts = {};
+  for (const team of Object.keys(TEAM_CAPS)) {
+    teamCounts[team] = names.filter(n => TEAMS[n] === team).length;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'loc-card';
+
+  // Check if current user is on this day
+  const userOnThisDay = names.includes(currentUser) || overflowNames.includes(currentUser);
+  if (userOnThisDay) {
+    card.style.borderLeftColor = 'var(--cobalt)';
+  }
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'loc-card-header';
+  header.innerHTML = `
+    <div class="loc-title" style="color: var(--text);">
+      ${capitalize(day)}
+      <span class="count-pill" style="background: ${isFull ? 'rgba(238,127,115,0.15)' : 'rgba(37,34,193,0.08)'}; color: ${isFull ? 'var(--coral)' : 'var(--cobalt)'};">${count} / ${REGULAR_CAP}</span>
+    </div>`;
+  card.appendChild(header);
+
+  // Body
+  const body = document.createElement('div');
+  body.style.padding = '12px 16px';
+
+  // Capacity bar
+  body.innerHTML = `
+    <div class="capacity-bar">
+      <div class="capacity-fill${isFull ? ' full' : ''}" style="width:${pct}%"></div>
+    </div>
+    <div class="team-caps">
+      Nathan: ${teamCounts.nathan || 0}/${TEAM_CAPS.nathan} &middot;
+      Geoff: ${teamCounts.geoff || 0}/${TEAM_CAPS.geoff} &middot;
+      Natalie: ${teamCounts.natalie || 0}/${TEAM_CAPS.natalie}
+    </div>`;
+
+  // Name chips
+  const chipList = document.createElement('ul');
+  chipList.className = 'name-list';
+  chipList.style.padding = '0';
   names.forEach(name => {
-    const li   = document.createElement('li');
+    const li = document.createElement('li');
     const chip = document.createElement('span');
     chip.className = 'chip' + (name === currentUser ? ' you' : '');
     chip.textContent = name + (name === currentUser ? ' (you)' : '');
     li.appendChild(chip);
-    ul.appendChild(li);
+    chipList.appendChild(li);
   });
+  if (!names.length) {
+    const emptyP = document.createElement('p');
+    emptyP.style.cssText = 'font-size:0.75rem; color:var(--muted); font-style:italic; margin: 4px 0;';
+    emptyP.textContent = 'No one assigned yet';
+    body.appendChild(emptyP);
+  }
+  body.appendChild(chipList);
+  card.appendChild(body);
+
+  // Overflow section
+  const ovSection = document.createElement('div');
+  ovSection.className = 'overflow-section';
+  const ovLabel = document.createElement('span');
+  ovLabel.innerHTML = `&#128274; Overflow (${overflowNames.length}/${OVERFLOW_CAP})`;
+  ovSection.appendChild(ovLabel);
+  if (overflowNames.length) {
+    const ovChips = document.createElement('span');
+    ovChips.innerHTML = overflowNames.map(n => {
+      const isYou = n === currentUser;
+      return `<span class="chip${isYou ? ' you' : ''}" style="font-size:0.68rem; padding:2px 7px;">${n}${isYou ? ' (you)' : ''}</span>`;
+    }).join(' ');
+    ovSection.appendChild(ovChips);
+  }
+  card.appendChild(ovSection);
+
+  // Claim button
+  if (currentUser && canClaim(day)) {
+    const claimArea = document.createElement('div');
+    claimArea.className = 'claim-area';
+    const btn = document.createElement('button');
+    btn.className = 'btn-primary btn-sm';
+    btn.style.width = '100%';
+    btn.textContent = `Claim ${capitalize(day)}`;
+    btn.onclick = () => claimDay(day);
+    claimArea.appendChild(btn);
+    card.appendChild(claimArea);
+  }
+
+  return card;
 }
 
-function renderPersonal() {
-  const el = document.getElementById('personalSchedule');
+function canClaim(day) {
+  if (!currentUser) return false;
+  // Already assigned?
+  if (getUserDay(currentUser) || getUserOverflowDay(currentUser)) return false;
+
+  const isSpecial = !!SPECIAL_USERS[currentUser];
+
+  if (isSpecial) {
+    // Special users go to overflow; check overflow capacity
+    return overflow[day].length < OVERFLOW_CAP;
+  }
+
+  // Regular user
+  const team = TEAMS[currentUser];
+  if (!team) return false;
+
+  const regularFull = schedule[day].length >= REGULAR_CAP;
+  const overflowFull = overflow[day].length >= OVERFLOW_CAP;
+
+  if (!regularFull) {
+    // Check team cap
+    const teamCount = schedule[day].filter(n => TEAMS[n] === team).length;
+    return teamCount < TEAM_CAPS[team];
+  }
+
+  // Regular full — can request overflow if not full
+  return !overflowFull;
+}
+
+function renderYourDay() {
+  const el = document.getElementById('yourDayBody');
   if (!currentUser) {
-    el.innerHTML = '<p class="empty-msg">Select your name above to see your full schedule.</p>';
+    el.innerHTML = '<p class="empty-msg">Select your name above.</p>';
     return;
   }
-  const grid = document.createElement('div');
-  grid.className = 'schedule-grid';
-  schedule.forEach((w, i) => {
-    const loc = w.wabash.includes(currentUser) ? 'wabash' : w.monroe.includes(currentUser) ? 'monroe' : null;
-    if (!loc) return;
-    const cur  = isCurrentWeek(i);
-    const item = document.createElement('div');
-    item.className = `sched-item ${loc}-w${cur ? ' now' : ''}`;
-    item.innerHTML = `
-      <div class="sched-week">${w.label}</div>
-      <div class="sched-loc ${loc}">${loc.charAt(0).toUpperCase()+loc.slice(1)}</div>
-      ${cur ? '<div class="sched-now-tag">Current week</div>' : ''}`;
-    grid.appendChild(item);
-  });
-  el.innerHTML = '';
-  el.appendChild(grid);
+
+  const myDay = getUserDay(currentUser);
+  const myOverflowDay = getUserOverflowDay(currentUser);
+
+  if (myDay) {
+    el.innerHTML = `
+      <p style="font-size:0.88rem; font-weight:600;">Your day: <strong style="color:var(--cobalt);">${capitalize(myDay)}</strong></p>
+      <button class="btn-ghost btn-sm" style="margin-top:10px;" onclick="openModal()">Request a Trade</button>`;
+  } else if (myOverflowDay) {
+    el.innerHTML = `
+      <p style="font-size:0.88rem; font-weight:600;">You're in overflow on <strong style="color:var(--cobalt);">${capitalize(myOverflowDay)}</strong></p>`;
+  } else {
+    // Check if there are any eligible days
+    const eligible = ['tuesday','wednesday','thursday'].filter(d => canClaim(d));
+    let msg = "You haven't claimed a day yet.";
+    if (eligible.length) {
+      msg += ` You can claim: ${eligible.map(capitalize).join(', ')}.`;
+    } else {
+      msg += ' All days are currently full.';
+    }
+    el.innerHTML = `<p class="empty-msg">${msg}</p>`;
+  }
 }
 
 function renderTrades() {
@@ -794,23 +892,21 @@ function renderTrades() {
 function buildTradeCard(t) {
   const isForMe  = t.type === 'swap' && t.targetPerson === currentUser;
   const isMyPost = t.postedBy === currentUser;
-  const wk       = schedule.find(w => w.weekStart === t.weekDate);
-  const wkLabel  = wk ? wk.label : t.weekDate;
 
   let desc;
   if (t.type === 'open') {
-    desc = `<strong>${t.postedBy}</strong> at <strong>${t.location}</strong> · ${wkLabel} — open to any swap`;
+    desc = `<strong>${t.postedBy}</strong> is available <strong>${capitalize(t.day)}</strong> — open to any swap`;
   } else {
-    desc = `<strong>${t.postedBy}</strong> wants to swap <strong>${t.location}</strong> · ${wkLabel} with <strong>${t.targetPerson}</strong>`;
+    desc = `<strong>${t.postedBy}</strong> wants to swap <strong>${capitalize(t.day)}</strong> with <strong>${t.targetPerson}</strong>`;
   }
 
   let actions = '';
   if (isMyPost) {
     actions = `<button class="btn-ghost btn-sm" onclick="cancelTrade('${t.id}')">Cancel</button>`;
   } else if (t.type === 'open' && currentUser) {
-    const myLoc = wk ? userLocInWeek(currentUser, wk) : null;
-    if (myLoc && myLoc !== t.location) {
-      actions = `<button class="btn-success btn-sm" onclick="acceptTrade('${t.id}')">Accept — swap my ${myLoc}</button>`;
+    const myDay = getUserDay(currentUser);
+    if (myDay && myDay !== t.day) {
+      actions = `<button class="btn-success btn-sm" onclick="acceptTrade('${t.id}')">Accept — swap my ${capitalize(myDay)}</button>`;
     }
   } else if (isForMe) {
     actions = `
@@ -830,24 +926,161 @@ function buildTradeCard(t) {
   return card;
 }
 
-// ═══════════════════════════════════════════════════════
-// INTERACTIONS
-// ═══════════════════════════════════════════════════════
-function setFilter(loc, btn) {
-  locFilter = loc;
-  document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active','wabash','monroe'));
-  btn.classList.add('active');
-  if (loc !== 'both') btn.classList.add(loc);
-  renderRoster();
+function renderOverflowRequests() {
+  const panel = document.getElementById('managerPanel');
+  const list  = document.getElementById('overflowRequestList');
+
+  if (currentUser !== MANAGER_NAME) {
+    panel.classList.add('hidden');
+    return;
+  }
+
+  const pending = overflowRequests.filter(r => r.status === 'pending');
+  if (!pending.length) {
+    panel.classList.add('hidden');
+    return;
+  }
+
+  panel.classList.remove('hidden');
+  list.innerHTML = '';
+  pending.forEach(req => {
+    const row = document.createElement('div');
+    row.className = 'trade-row';
+    row.innerHTML = `
+      <div style="flex:1">
+        <div class="trade-desc"><strong>${req.name}</strong> wants to come in <strong>${capitalize(req.day)}</strong></div>
+        <div class="trade-meta">Requested ${new Date(req.requestedAt).toLocaleDateString()}</div>
+      </div>
+      <div class="trade-actions">
+        <button class="btn-success btn-sm" onclick="approveOverflow('${req.id}')">Approve</button>
+        <button class="btn-danger btn-sm" onclick="denyOverflow('${req.id}')">Deny</button>
+      </div>`;
+    list.appendChild(row);
+  });
 }
 
+// ═══════════════════════════════════════════════════════
+// SIGNUP / CLAIM LOGIC
+// ═══════════════════════════════════════════════════════
+function claimDay(day) {
+  if (!currentUser) { alert('Select your name first.'); return; }
+
+  const isSpecial = !!SPECIAL_USERS[currentUser];
+  const team      = TEAMS[currentUser];
+
+  // Check: already assigned?
+  const alreadyDay = getUserDay(currentUser);
+  const alreadyOverflow = getUserOverflowDay(currentUser);
+  if (alreadyDay || alreadyOverflow) {
+    alert('You already have a day assigned.');
+    return;
+  }
+
+  const regularFull = schedule[day].length >= REGULAR_CAP;
+  const overflowFull = overflow[day].length >= OVERFLOW_CAP;
+
+  if (isSpecial) {
+    // Shayaan: always goes to overflow, auto-approved
+    if (overflowFull) { alert('Overflow is full for that day.'); return; }
+    overflow[day].push(currentUser);
+    sheetsClaimDay(currentUser, day, true, true);
+    renderAll();
+    return;
+  }
+
+  // Regular user: check team cap
+  const teamCount = schedule[day].filter(n => TEAMS[n] === team).length;
+  if (!regularFull && teamCount >= TEAM_CAPS[team]) {
+    alert(`Your team (${capitalize(team)}'s) already has ${TEAM_CAPS[team]} people on ${capitalize(day)}. Try another day.`);
+    return;
+  }
+
+  if (regularFull) {
+    // Offer overflow
+    if (overflowFull) { alert('Both regular and overflow are full for that day.'); return; }
+    if (!confirm(`Regular desks are full. Request an overflow desk for ${capitalize(day)}? This requires manager approval.`)) return;
+    overflowRequests.push({
+      id: crypto.randomUUID(),
+      name: currentUser,
+      day,
+      requestedAt: new Date().toISOString(),
+      status: 'pending',
+      approvedBy: '',
+      approvedAt: '',
+    });
+    sheetsRequestOverflow(currentUser, day);
+    alert('Overflow request submitted. Waiting for manager approval.');
+    renderAll();
+    return;
+  }
+
+  // Regular claim
+  schedule[day].push(currentUser);
+  sheetsClaimDay(currentUser, day, false, false);
+  renderAll();
+}
+
+function getUserDay(user) {
+  for (const d of ['tuesday','wednesday','thursday']) {
+    if (schedule[d].includes(user)) return d;
+  }
+  return null;
+}
+
+function getUserOverflowDay(user) {
+  for (const d of ['tuesday','wednesday','thursday']) {
+    if (overflow[d].includes(user)) return d;
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
+// MANAGER OVERFLOW APPROVE / DENY
+// ═══════════════════════════════════════════════════════
+async function approveOverflow(id) {
+  const req = overflowRequests.find(r => r.id === id);
+  if (!req) return;
+  if (overflow[req.day].length >= OVERFLOW_CAP) {
+    alert('Overflow is full for that day.'); return;
+  }
+  req.status     = 'approved';
+  req.approvedBy = currentUser;
+  req.approvedAt = new Date().toISOString();
+  overflow[req.day].push(req.name);
+  await sheetsApproveOverflow(req);
+  renderAll();
+}
+
+async function denyOverflow(id) {
+  const req = overflowRequests.find(r => r.id === id);
+  if (!req) return;
+  req.status = 'denied';
+  await sheetsApproveOverflow(req);
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════
+// SWAP LOGIC
+// ═══════════════════════════════════════════════════════
+function swapDays(person1, person2) {
+  const day1 = getUserDay(person1);
+  const day2 = getUserDay(person2);
+  if (!day1 || !day2 || day1 === day2) return;
+  // Remove from current days
+  schedule[day1].splice(schedule[day1].indexOf(person1), 1);
+  schedule[day2].splice(schedule[day2].indexOf(person2), 1);
+  // Add to swapped days
+  schedule[day2].push(person1);
+  schedule[day1].push(person2);
+}
+
+// ═══════════════════════════════════════════════════════
+// NAME SELECT
+// ═══════════════════════════════════════════════════════
 function buildNameSelect() {
-  const names = new Set();
-  schedule.forEach(w => { w.wabash.forEach(n => names.add(n)); w.monroe.forEach(n => names.add(n)); });
   const sel = document.getElementById('nameSelect');
-  // Preserve existing options count to avoid duplication on reload
   while (sel.options.length > 1) sel.remove(1);
-  Array.from(names).sort().forEach(n => {
+  ALL_NAMES.forEach(n => {
     const opt = document.createElement('option');
     opt.value = n; opt.textContent = n;
     if (n === currentUser) opt.selected = true;
@@ -866,24 +1099,19 @@ function buildNameSelect() {
 function openModal() {
   if (!currentUser) { alert('Select your name first.'); return; }
 
-  // Populate week dropdown
-  const ws = document.getElementById('modalWeek');
-  ws.innerHTML = '';
-  schedule.forEach(w => {
-    const loc = userLocInWeek(currentUser, w);
-    if (!loc) return;
-    const o = document.createElement('option');
-    o.value = w.weekStart;
-    o.textContent = `${w.label}  (${capitalize(loc)})`;
-    ws.appendChild(o);
-  });
+  // Pre-select user's day if they have one
+  const myDay = getUserDay(currentUser);
+  const daySelect = document.getElementById('modalDay');
+  if (myDay) {
+    daySelect.value = myDay;
+  } else {
+    daySelect.value = '';
+  }
 
   // Populate target dropdown
   const ts = document.getElementById('modalTarget');
-  ts.innerHTML = '<option value="">Select person…</option>';
-  const names = new Set();
-  schedule.forEach(w => { w.wabash.forEach(n => names.add(n)); w.monroe.forEach(n => names.add(n)); });
-  Array.from(names).sort().filter(n => n !== currentUser).forEach(n => {
+  ts.innerHTML = '<option value="">Select person...</option>';
+  ALL_NAMES.filter(n => n !== currentUser).forEach(n => {
     const o = document.createElement('option'); o.value = n; o.textContent = n; ts.appendChild(o);
   });
 
@@ -903,48 +1131,45 @@ function setTradeType(type) {
 }
 
 function updatePreview() {
-  const prev     = document.getElementById('tradePreview');
-  const weekDate = document.getElementById('modalWeek').value;
-  const w        = schedule.find(x => x.weekStart === weekDate);
-  if (!w) { prev.textContent = 'Select a week to preview.'; return; }
+  const prev = document.getElementById('tradePreview');
+  const selectedDay = document.getElementById('modalDay').value;
+  if (!selectedDay) { prev.textContent = 'Select a day to preview.'; return; }
 
-  const myLoc = userLocInWeek(currentUser, w);
-  if (!myLoc) { prev.textContent = "You don't appear in that week's schedule."; return; }
+  const myDay = getUserDay(currentUser);
+  if (!myDay) { prev.textContent = "You don't have a day assigned to trade."; return; }
 
   if (tradeType === 'open') {
-    prev.textContent = `"${currentUser} at ${capitalize(myLoc)} · ${w.label} — open to any swap"`;
+    prev.textContent = `"${currentUser} is available ${capitalize(myDay)} — open to any swap"`;
     return;
   }
 
-  const target    = document.getElementById('modalTarget').value;
-  if (!target)    { prev.textContent = 'Select a person to swap with.'; return; }
-  const theirLoc  = userLocInWeek(target, w);
-  if (!theirLoc)  { prev.textContent = `${target} isn't in the schedule for that week.`; return; }
-  if (theirLoc === myLoc) { prev.textContent = `You and ${target} are both at ${capitalize(myLoc)} that week — no swap needed!`; return; }
+  const target = document.getElementById('modalTarget').value;
+  if (!target) { prev.textContent = 'Select a person to swap with.'; return; }
+  const theirDay = getUserDay(target);
+  if (!theirDay) { prev.textContent = `${target} doesn't have a day assigned.`; return; }
+  if (theirDay === myDay) { prev.textContent = `You and ${target} are both on ${capitalize(myDay)} — no swap needed!`; return; }
 
-  prev.textContent = `Swap your ${capitalize(myLoc)} ↔ ${target}'s ${capitalize(theirLoc)} for ${w.label}`;
+  prev.textContent = `Swap your ${capitalize(myDay)} with ${target}'s ${capitalize(theirDay)}`;
 }
 
 async function submitTrade() {
-  const weekDate = document.getElementById('modalWeek').value;
-  const target   = tradeType === 'swap' ? document.getElementById('modalTarget').value : '';
-  if (!weekDate)                          { alert('Select a week.');         return; }
-  if (tradeType === 'swap' && !target)    { alert('Select a person.');       return; }
+  const selectedDay = document.getElementById('modalDay').value;
+  const target = tradeType === 'swap' ? document.getElementById('modalTarget').value : '';
+  if (!selectedDay) { alert('Select a day.'); return; }
+  if (tradeType === 'swap' && !target) { alert('Select a person.'); return; }
 
-  const w   = schedule.find(x => x.weekStart === weekDate);
-  const loc = userLocInWeek(currentUser, w);
-  if (!loc) return;
+  const myDay = getUserDay(currentUser);
+  if (!myDay) { alert("You don't have a day assigned to trade."); return; }
 
   if (tradeType === 'swap') {
-    const theirLoc = userLocInWeek(target, w);
-    if (theirLoc === loc) { alert(`You and ${target} are both at ${capitalize(loc)} that week.`); return; }
+    const theirDay = getUserDay(target);
+    if (theirDay === myDay) { alert(`You and ${target} are both on ${capitalize(myDay)}.`); return; }
   }
 
   const trade = {
     id:           crypto.randomUUID(),
     postedBy:     currentUser,
-    weekDate,
-    location:     capitalize(loc),
+    day:          myDay,
     type:         tradeType,
     targetPerson: target,
     status:       'pending',
@@ -967,25 +1192,24 @@ async function submitTrade() {
 
 async function acceptTrade(id) {
   if (!currentUser) { alert('Select your name first.'); return; }
-  const t  = trades.find(x => x.id === id);
-  const w  = schedule.find(x => x.weekStart === t.weekDate);
-  if (!t || !w) return;
+  const t = trades.find(x => x.id === id);
+  if (!t) return;
 
-  const posterLoc   = userLocInWeek(t.postedBy, w);
-  const accepterLoc = userLocInWeek(currentUser, w);
-  if (!posterLoc || !accepterLoc || posterLoc === accepterLoc) {
-    alert('Swap not possible — you are at the same location.'); return;
+  const posterDay   = getUserDay(t.postedBy);
+  const accepterDay = getUserDay(currentUser);
+  if (!posterDay || !accepterDay || posterDay === accepterDay) {
+    alert('Swap not possible — you are on the same day.'); return;
   }
 
   // Swap in local schedule
-  swapInWeek(w, t.postedBy, currentUser);
+  swapDays(t.postedBy, currentUser);
 
   t.status     = 'accepted';
   t.acceptedBy = currentUser;
   t.acceptedAt = new Date().toISOString();
 
   if (isSignedIn) {
-    await sheetsSwapSchedule(t, w, t.postedBy, currentUser);
+    await sheetsSwapSchedule(t.postedBy, currentUser);
     await sheetsUpdateTradeStatus(t);
   } else {
     saveLocalTrades();
@@ -1034,6 +1258,7 @@ function gapiLoaded() {
       gapiReady = true;
       await sheetsLoadSchedule();
       await sheetsLoadTrades();
+      await sheetsLoadOverflow();
     } catch(e) {
       console.error('GAPI init error', e);
       setBadge('API Error', 'error');
@@ -1061,72 +1286,123 @@ function signIn() {
 }
 
 // ═══════════════════════════════════════════════════════
-// SHEETS — READ SCHEDULE
+// SHEETS — READ SCHEDULE (Name | Day | Team)
 // ═══════════════════════════════════════════════════════
 async function sheetsLoadSchedule() {
   try {
     const res  = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: CONFIG.SHEET_ID,
-      range: `${CONFIG.SCHEDULE_TAB}!A:Z`,
+      range: `${CONFIG.SCHEDULE_TAB}!A:C`,
     });
-    const rows = res.result.values || [];
-    const parsed = parseScheduleRows(rows);
-    if (parsed.length) {
-      schedule = parsed;
-      weekIdx  = findCurrentWeekIndex();
-      buildNameSelect();
-      renderAll();
-      setBadge('Live', 'live');
-    }
+    const rows = (res.result.values || []).slice(1); // skip header
+    schedule = { tuesday: [], wednesday: [], thursday: [] };
+    rows.forEach(r => {
+      const name = (r[0]||'').trim();
+      const day  = (r[1]||'').trim().toLowerCase();
+      if (name && ['tuesday','wednesday','thursday'].includes(day)) {
+        schedule[day].push(name);
+      }
+    });
+    buildNameSelect();
+    renderAll();
+    setBadge('Live', 'live');
   } catch(e) {
     console.error('Schedule load failed', e);
     setBadge('Offline', 'offline');
   }
 }
 
-function parseScheduleRows(rows) {
-  const result = [];
-  let cur = null;
-  const startRow = (rows[0] && /date/i.test(rows[0][0] || '')) ? 1 : 0;
-
-  for (let i = startRow; i < rows.length; i++) {
-    const row  = rows[i] || [];
-    const col0 = (row[0] || '').trim();
-    const col1 = (row[1] || '').trim();
-    const names = row.slice(2).map(n => (n||'').trim()).filter(Boolean);
-
-    if (col0) {
-      cur = { weekStart: parseDateRangeStart(col0), label: formatDateLabel(col0), wabash:[], monroe:[] };
-      result.push(cur);
-    }
-    if (!cur) continue;
-    if (/wabash/i.test(col1))        cur.wabash = names;
-    else if (/monroe/i.test(col1))   cur.monroe = names;
+// ═══════════════════════════════════════════════════════
+// SHEETS — READ OVERFLOW
+// ═══════════════════════════════════════════════════════
+async function sheetsLoadOverflow() {
+  try {
+    const res  = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: CONFIG.SHEET_ID,
+      range: `${CONFIG.OVERFLOW_TAB}!A:G`,
+    });
+    const rows = (res.result.values || []).slice(1);
+    overflow = { tuesday: [], wednesday: [], thursday: [] };
+    overflowRequests = rows.map(r => ({
+      id: r[0]||'', name: r[1]||'', day: (r[2]||'').toLowerCase(),
+      requestedAt: r[3]||'', status: r[4]||'pending',
+      approvedBy: r[5]||'', approvedAt: r[6]||'',
+    })).filter(r => r.id);
+    overflowRequests.forEach(r => {
+      if (r.status === 'approved' && ['tuesday','wednesday','thursday'].includes(r.day)) {
+        overflow[r.day].push(r.name);
+      }
+    });
+    renderAll();
+  } catch(e) {
+    console.warn('Overflow tab not found, using empty state', e);
   }
-  return result.filter(w => w.weekStart);
 }
 
-function parseDateRangeStart(str) {
+// ═══════════════════════════════════════════════════════
+// SHEETS — CLAIM DAY
+// ═══════════════════════════════════════════════════════
+async function sheetsClaimDay(name, day, isOverflow, autoApprove) {
+  if (!gapiReady) return;
+  const team = TEAMS[name] || 'special';
   try {
-    const first = str.split('-')[0].trim();
-    const [m, d] = first.split('/').map(Number);
-    return `2026-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  } catch(e) { return null; }
+    if (!isOverflow) {
+      await gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId: CONFIG.SHEET_ID,
+        range: `${CONFIG.SCHEDULE_TAB}!A:C`,
+        valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS',
+        resource: { values: [[name, capitalize(day), team]] },
+      });
+    } else {
+      const status = autoApprove ? 'approved' : 'pending';
+      const id = crypto.randomUUID();
+      await gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId: CONFIG.SHEET_ID,
+        range: `${CONFIG.OVERFLOW_TAB}!A:G`,
+        valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS',
+        resource: { values: [[id, name, capitalize(day), new Date().toISOString(), status, autoApprove ? name : '', autoApprove ? new Date().toISOString() : '']] },
+      });
+    }
+  } catch(e) { console.error('Claim day failed', e); }
 }
 
-function formatDateLabel(str) {
-  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// ═══════════════════════════════════════════════════════
+// SHEETS — REQUEST OVERFLOW
+// ═══════════════════════════════════════════════════════
+async function sheetsRequestOverflow(name, day) {
+  if (!gapiReady) return;
+  const req = overflowRequests.find(r => r.name === name && r.day === day && r.status === 'pending');
+  if (!req) return;
   try {
-    const parts = str.split('-');
-    const [sm, sd] = parts[0].trim().split('/').map(Number);
-    const end = parts.slice(1).join('-').trim();
-    let em, ed;
-    if (end.includes('/')) { [em, ed] = end.split('/').map(Number); }
-    else                   { em = sm; ed = Number(end); }
-    return sm === em
-      ? `${mon[sm-1]} ${sd} – ${ed}`
-      : `${mon[sm-1]} ${sd} – ${mon[em-1]} ${ed}`;
-  } catch(e) { return str; }
+    await gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: CONFIG.SHEET_ID,
+      range: `${CONFIG.OVERFLOW_TAB}!A:G`,
+      valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS',
+      resource: { values: [[req.id, req.name, capitalize(req.day), req.requestedAt, req.status, req.approvedBy, req.approvedAt]] },
+    });
+  } catch(e) { console.error('Request overflow failed', e); }
+}
+
+// ═══════════════════════════════════════════════════════
+// SHEETS — APPROVE / DENY OVERFLOW
+// ═══════════════════════════════════════════════════════
+async function sheetsApproveOverflow(req) {
+  if (!gapiReady) return;
+  try {
+    const res = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: CONFIG.SHEET_ID, range: `${CONFIG.OVERFLOW_TAB}!A:A`,
+    });
+    const rowNum = (res.result.values||[]).findIndex(r => r[0] === req.id);
+    if (rowNum < 0) return;
+    const r = rowNum + 1;
+    await gapi.client.sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: CONFIG.SHEET_ID,
+      resource: { valueInputOption:'RAW', data:[
+        { range:`${CONFIG.OVERFLOW_TAB}!E${r}`, values:[[req.status]] },
+        { range:`${CONFIG.OVERFLOW_TAB}!F${r}:G${r}`, values:[[req.approvedBy, req.approvedAt]] },
+      ]},
+    });
+  } catch(e) { console.error('Approve overflow failed', e); }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1136,13 +1412,13 @@ async function sheetsLoadTrades() {
   try {
     const res  = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: CONFIG.SHEET_ID,
-      range: `${CONFIG.TRADES_TAB}!A:J`,
+      range: `${CONFIG.TRADES_TAB}!A:I`,
     });
     const rows = (res.result.values || []).slice(1);
     const sheetTrades = rows.map(r => ({
-      id:           r[0]||'', postedBy:r[1]||'', weekDate:r[2]||'', location:r[3]||'',
-      type:         r[4]||'open', targetPerson:r[5]||'', status:r[6]||'pending',
-      postedAt:     r[7]||'', acceptedBy:r[8]||'', acceptedAt:r[9]||'',
+      id:           r[0]||'', postedBy:r[1]||'', day:r[2]||'',
+      type:         r[3]||'open', targetPerson:r[4]||'', status:r[5]||'pending',
+      postedAt:     r[6]||'', acceptedBy:r[7]||'', acceptedAt:r[8]||'',
     })).filter(t => t.id);
     if (sheetTrades.length) trades = sheetTrades;
     renderTrades();
@@ -1159,10 +1435,10 @@ async function sheetsAppendTrade(t) {
   try {
     await gapi.client.sheets.spreadsheets.values.append({
       spreadsheetId: CONFIG.SHEET_ID,
-      range: `${CONFIG.TRADES_TAB}!A:J`,
+      range: `${CONFIG.TRADES_TAB}!A:I`,
       valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
-      resource: { values:[[t.id,t.postedBy,t.weekDate,t.location,t.type,t.targetPerson,t.status,t.postedAt,t.acceptedBy,t.acceptedAt]] },
+      resource: { values:[[t.id,t.postedBy,t.day,t.type,t.targetPerson,t.status,t.postedAt,t.acceptedBy,t.acceptedAt]] },
     });
   } catch(e) { console.error('Append trade failed', e); saveLocalTrades(); }
 }
@@ -1179,8 +1455,8 @@ async function sheetsUpdateTradeStatus(t) {
     await gapi.client.sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: CONFIG.SHEET_ID,
       resource: { valueInputOption:'RAW', data:[
-        { range:`${CONFIG.TRADES_TAB}!G${r}`, values:[[t.status]] },
-        { range:`${CONFIG.TRADES_TAB}!I${r}:J${r}`, values:[[t.acceptedBy, t.acceptedAt]] },
+        { range:`${CONFIG.TRADES_TAB}!F${r}`, values:[[t.status]] },
+        { range:`${CONFIG.TRADES_TAB}!H${r}:I${r}`, values:[[t.acceptedBy, t.acceptedAt]] },
       ]},
     });
   } catch(e) { console.error('Update trade status failed', e); saveLocalTrades(); }
@@ -1189,37 +1465,26 @@ async function sheetsUpdateTradeStatus(t) {
 // ═══════════════════════════════════════════════════════
 // SHEETS — SWAP SCHEDULE
 // ═══════════════════════════════════════════════════════
-async function sheetsSwapSchedule(t, week, person1, person2) {
+async function sheetsSwapSchedule(person1, person2) {
   if (!gapiReady) return;
   try {
-    const res  = await gapi.client.sheets.spreadsheets.values.get({
-      spreadsheetId: CONFIG.SHEET_ID, range:`${CONFIG.SCHEDULE_TAB}!A:Z`,
+    const res = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: CONFIG.SHEET_ID, range: `${CONFIG.SCHEDULE_TAB}!A:B`,
     });
-    const rows  = res.result.values || [];
+    const rows = res.result.values || [];
     const updates = [];
-
     for (let i = 0; i < rows.length; i++) {
-      const row  = rows[i];
-      const col0 = (row[0]||'').trim();
-      // Determine if this row belongs to the target week
-      const rowWeekStart = col0 ? parseDateRangeStart(col0) : null;
-      const prevWeekStart = i > 0 && !(rows[i-1][0]||'').trim() ? null :
-        (i > 0 ? parseDateRangeStart((rows[i-1][0]||'').trim()) : null);
-
-      const belongsToWeek = rowWeekStart === t.weekDate ||
-        (!col0 && prevWeekStart === t.weekDate);
-
-      if (!belongsToWeek) continue;
-
-      for (let j = 2; j < row.length; j++) {
-        const cell = (row[j]||'').trim();
-        if (cell === person1 || cell === person2) {
-          const newVal = cell === person1 ? person2 : person1;
-          updates.push({ range:`${CONFIG.SCHEDULE_TAB}!${colLetter(j+1)}${i+1}`, values:[[newVal]] });
-        }
+      const name = (rows[i][0]||'').trim();
+      const day  = (rows[i][1]||'').trim();
+      if (name === person1) {
+        // person1 now has person2's old day (already swapped in local state)
+        const newDay = getUserDay(person1);
+        if (newDay) updates.push({ range:`${CONFIG.SCHEDULE_TAB}!B${i+1}`, values:[[capitalize(newDay)]] });
+      } else if (name === person2) {
+        const newDay = getUserDay(person2);
+        if (newDay) updates.push({ range:`${CONFIG.SCHEDULE_TAB}!B${i+1}`, values:[[capitalize(newDay)]] });
       }
     }
-
     if (updates.length) {
       await gapi.client.sheets.spreadsheets.values.batchUpdate({
         spreadsheetId: CONFIG.SHEET_ID,
@@ -1244,20 +1509,6 @@ async function syncLocalTrades() {
 // ═══════════════════════════════════════════════════════
 // UTILITIES
 // ═══════════════════════════════════════════════════════
-function userLocInWeek(user, w) {
-  if (w.wabash.includes(user)) return 'wabash';
-  if (w.monroe.includes(user)) return 'monroe';
-  return null;
-}
-
-function swapInWeek(w, a, b) {
-  const aLoc = userLocInWeek(a, w);
-  const bLoc = userLocInWeek(b, w);
-  if (!aLoc || !bLoc || aLoc === bLoc) return;
-  w[aLoc].splice(w[aLoc].indexOf(a), 1); w[bLoc].push(a);
-  w[bLoc].splice(w[bLoc].indexOf(b), 1); w[aLoc].push(b);
-}
-
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 function colLetter(n) {
